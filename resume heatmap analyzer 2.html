@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Heatmap Analyzer - Professional Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0078d4, #005a9e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #0078d4;
+            transform: translateY(-5px);
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #0078d4, #005a9e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .file-info {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .analysis-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .resume-display {
+            grid-column: span 2;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .resume-content {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 30px;
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            min-height: 400px;
+            border: 1px solid #e0e0e0;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .highlight-excellent { background-color: rgba(0, 128, 0, 0.3); }
+        .highlight-good { background-color: rgba(255, 165, 0, 0.3); }
+        .highlight-weak { background-color: rgba(255, 0, 0, 0.3); }
+        .highlight-filler { background-color: rgba(128, 128, 128, 0.3); }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .recommendations {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .recommendation-item {
+            background: white;
+            border-left: 4px solid #0078d4;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .recommendation-title {
+            font-weight: bold;
+            color: #0078d4;
+            margin-bottom: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab.active {
+            background: #0078d4;
+            color: white;
+        }
+
+        .tab:not(.active):hover {
+            background: rgba(0, 120, 212, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .keyword-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .keyword-category {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .keyword-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .keyword-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .keyword-found {
+            background: rgba(0, 128, 0, 0.1);
+            color: #006400;
+            border: 1px solid rgba(0, 128, 0, 0.3);
+        }
+
+        .keyword-missing {
+            background: rgba(255, 0, 0, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0078d4, #005a9e);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #0078d4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .export-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #0078d4, #005a9e);
+            color: white;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 120, 212, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .resume-display {
+                grid-column: span 1;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #0078d4;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .ats-score {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .ats-score-value {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .ats-score-label {
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Resume Heatmap Analyzer</h1>
+            <p>Professional Resume Analysis & Optimization Tool</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Drop your resume here or click to upload</div>
+                    <div class="file-info">Supports .txt, .pdf (text extraction), and direct text input</div>
+                </div>
+                <input type="file" id="fileInput" accept=".txt,.pdf">
+                
+                <div style="margin-top: 20px;">
+                    <textarea 
+                        id="resumeInput" 
+                        placeholder="Or paste your resume text directly here..."
+                        style="width: 100%; height: 200px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; resize: vertical;"
+                    ></textarea>
+                    <button onclick="analyzeResume()" style="width: 100%; padding: 15px; margin-top: 15px; background: linear-gradient(135deg, #0078d4, #005a9e); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: 600;">
+                        🔍 Analyze Resume
+                    </button>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing your resume...</p>
+                </div>
+
+                <div id="results" style="display: none;">
+                    <div class="ats-score">
+                        <div class="ats-score-value" id="atsScore">--</div>
+                        <div class="ats-score-label">ATS Compatibility Score</div>
+                    </div>
+
+                    <div class="metrics">
+                        <div class="metric-card">
+                            <div class="metric-value" id="actionVerbCount">0</div>
+                            <div class="metric-label">Strong Action Verbs</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="keywordMatch">0%</div>
+                            <div class="metric-label">Keyword Match</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="fillerWords">0</div>
+                            <div class="metric-label">Filler Words</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="readabilityScore">--</div>
+                            <div class="metric-label">Readability Grade</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="resume-display" id="resumeDisplay" style="display: none;">
+            <div class="heatmap-legend">
+                <div class="legend-item">
+                    <div class="legend-color highlight-excellent"></div>
+                    <span>Excellent (Action Verbs, Keywords)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color highlight-good"></div>
+                    <span>Good (Skills, Achievements)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color highlight-weak"></div>
+                    <span>Weak (Generic Terms)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color highlight-filler"></div>
+                    <span>Filler Words</span>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('heatmap')">🗺️ Heatmap View</button>
+                <button class="tab" onclick="switchTab('keywords')">🔍 Keyword Analysis</button>
+                <button class="tab" onclick="switchTab('recommendations')">💡 Recommendations</button>
+                <button class="tab" onclick="switchTab('export')">📊 Export Results</button>
+            </div>
+
+            <div id="heatmap" class="tab-content active">
+                <div class="section-title">Resume Heatmap Analysis</div>
+                <div class="resume-content" id="resumeContent"></div>
+            </div>
+
+            <div id="keywords" class="tab-content">
+                <div class="section-title">Keyword & Skills Analysis</div>
+                <div class="keyword-analysis">
+                    <div class="keyword-category">
+                        <h3>💼 Technical Skills</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="techProgress"></div>
+                        </div>
+                        <div class="keyword-list" id="techKeywords"></div>
+                    </div>
+                    <div class="keyword-category">
+                        <h3>🎯 Action Verbs</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="actionProgress"></div>
+                        </div>
+                        <div class="keyword-list" id="actionKeywords"></div>
+                    </div>
+                    <div class="keyword-category">
+                        <h3>🏢 Industry Keywords</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="industryProgress"></div>
+                        </div>
+                        <div class="keyword-list" id="industryKeywords"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="recommendations" class="tab-content">
+                <div class="section-title">AI-Powered Recommendations</div>
+                <div class="recommendations" id="recommendationsList"></div>
+            </div>
+
+            <div id="export" class="tab-content">
+                <div class="section-title">Export Analysis Results</div>
+                <div style="text-align: center; padding: 20px;">
+                    <p style="margin-bottom: 20px; color: #666;">Download your resume analysis in multiple formats</p>
+                    <div class="export-options">
+                        <button class="export-btn" onclick="exportResults('pdf')">📄 Export PDF Report</button>
+                        <button class="export-btn" onclick="exportResults('json')">📊 Export JSON Data</button>
+                        <button class="export-btn" onclick="exportResults('html')">🌐 Export HTML Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let resumeText = '';
+        let analysisResults = {};
+
+        // Advanced keyword databases
+        const techSkills = [
+            'Python', 'JavaScript', 'Java', 'C++', 'C#', 'React', 'Angular', 'Vue.js', 'Node.js', 
+            'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'SQL', 'MongoDB', 'PostgreSQL', 
+            'Machine Learning', 'AI', 'Data Science', 'Analytics', 'Tableau', 'Power BI',
+            'Git', 'Jenkins', 'CI/CD', 'Agile', 'Scrum', 'DevOps', 'REST API', 'GraphQL',
+            'TensorFlow', 'PyTorch', 'Pandas', 'NumPy', 'Spark', 'Hadoop', 'Kafka'
+        ];
+
+        const actionVerbs = [
+            'Achieved', 'Accelerated', 'Accomplished', 'Analyzed', 'Built', 'Created', 'Designed', 
+            'Developed', 'Enhanced', 'Executed', 'Generated', 'Improved', 'Implemented', 'Increased',
+            'Launched', 'Led', 'Managed', 'Optimized', 'Orchestrated', 'Pioneered', 'Reduced',
+            'Streamlined', 'Transformed', 'Utilized', 'Spearheaded', 'Delivered', 'Collaborated',
+            'Facilitated', 'Mentored', 'Negotiated', 'Presented', 'Resolved', 'Scaled'
+        ];
+
+        const industryKeywords = [
+            'Innovation', 'Strategy', 'Leadership', 'Cross-functional', 'Stakeholder', 'ROI',
+            'KPI', 'Metrics', 'Performance', 'Optimization', 'Efficiency', 'Quality Assurance',
+            'Project Management', 'Team Leadership', 'Problem Solving', 'Communication',
+            'Automation', 'Digital Transformation', 'Process Improvement', 'Best Practices'
+        ];
+
+        const fillerWords = [
+            'responsible for', 'duties included', 'worked on', 'assisted with', 'helped with',
+            'involved in', 'participated in', 'contributed to', 'various', 'several', 'many',
+            'stuff', 'things', 'etc', 'and so on', 'really', 'very', 'quite', 'rather'
+        ];
+
+        const weakWords = [
+            'did', 'made', 'got', 'had', 'was', 'were', 'went', 'came', 'said', 'told',
+            'good', 'bad', 'nice', 'okay', 'fine', 'great', 'awesome', 'cool', 'neat'
+        ];
+
+        // File upload handler
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.type === 'text/plain') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('resumeInput').value = e.target.result;
+                    };
+                    reader.readAsText(file);
+                } else {
+                    alert('For this demo, please use .txt files or paste text directly. PDF parsing would require server-side processing.');
+                }
+            }
+        });
+
+        function analyzeResume() {
+            resumeText = document.getElementById('resumeInput').value.trim();
+            
+            if (!resumeText) {
+                alert('Please provide resume text to analyze.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            // Simulate analysis delay
+            setTimeout(() => {
+                performAnalysis();
+                displayResults();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('resumeDisplay').style.display = 'block';
+            }, 1500);
+        }
+
+        function performAnalysis() {
+            const words = resumeText.toLowerCase().split(/\W+/);
+            const sentences = resumeText.split(/[.!?]+/);
+            
+            // Count different elements
+            const foundActionVerbs = actionVerbs.filter(verb => 
+                resumeText.toLowerCase().includes(verb.toLowerCase())
+            );
+            
+            const foundTechSkills = techSkills.filter(skill => 
+                resumeText.toLowerCase().includes(skill.toLowerCase())
+            );
+            
+            const foundIndustryKeywords = industryKeywords.filter(keyword => 
+                resumeText.toLowerCase().includes(keyword.toLowerCase())
+            );
+            
+            const foundFillerWords = fillerWords.filter(filler => 
+                resumeText.toLowerCase().includes(filler.toLowerCase())
+            );
+
+            // Calculate metrics
+            const actionVerbCount = foundActionVerbs.length;
+            const keywordMatch = Math.round(((foundTechSkills.length + foundIndustryKeywords.length) / (techSkills.length + industryKeywords.length)) * 100);
+            const fillerWordCount = foundFillerWords.length;
+            const readabilityScore = calculateReadabilityScore(sentences, words);
+            const atsScore = calculateATSScore(actionVerbCount, keywordMatch, fillerWordCount, readabilityScore);
+
+            analysisResults = {
+                actionVerbCount,
+                keywordMatch,
+                fillerWordCount,
+                readabilityScore,
+                atsScore,
+                foundActionVerbs,
+                foundTechSkills,
+                foundIndustryKeywords,
+                foundFillerWords,
+                recommendations: generateRecommendations(actionVerbCount, keywordMatch, fillerWordCount)
+            };
+        }
+
+        function calculateReadabilityScore(sentences, words) {
+            const avgWordsPerSentence = words.length / sentences.length;
+            if (avgWordsPerSentence < 15) return 'A+';
+            if (avgWordsPerSentence < 20) return 'A';
+            if (avgWordsPerSentence < 25) return 'B+';
+            if (avgWordsPerSentence < 30) return 'B';
+            return 'C';
+        }
+
+        function calculateATSScore(actionVerbs, keywordMatch, fillerWords, readability) {
+            let score = 60; // Base score
+            score += Math.min(actionVerbs * 2, 20); // Up to 20 points for action verbs
+            score += Math.min(keywordMatch * 0.2, 20); // Up to 20 points for keywords
+            score -= Math.min(fillerWords * 3, 15); // Deduct for filler words
+            if (readability === 'A+' || readability === 'A') score += 5;
+            return Math.max(0, Math.min(100, Math.round(score)));
+        }
+
+        function generateRecommendations(actionVerbs, keywordMatch, fillerWords) {
+            const recommendations = [];
+            
+            if (actionVerbs < 8) {
+                recommendations.push({
+                    title: '💪 Add More Action Verbs',
+                    description: 'Your resume contains only ' + actionVerbs + ' strong action verbs. Aim for 10-15 powerful verbs like "spearheaded," "optimized," or "transformed" to make your achievements more impactful.'
+                });
+            }
+            
+            if (keywordMatch < 30) {
+                recommendations.push({
+                    title: '🎯 Improve Keyword Optimization',
+                    description: 'Your keyword match is at ' + keywordMatch + '%. Include more industry-relevant terms and technical skills that match your target job descriptions.'
+                });
+            }
+            
+            if (fillerWords > 5) {
+                recommendations.push({
+                    title: '✂️ Remove Filler Words',
+                    description: 'Found ' + fillerWords + ' instances of filler words. Replace phrases like "responsible for" with strong action verbs to create more impactful statements.'
+                });
+            }
+            
+            recommendations.push({
+                title: '📊 Quantify Achievements',
+                description: 'Add specific numbers, percentages, and metrics to demonstrate the scope and impact of your accomplishments.'
+            });
+            
+            recommendations.push({
+                title: '🎨 Format Optimization',
+                description: 'Use consistent formatting, bullet points, and clear section headers. Ensure your resume is ATS-friendly with standard fonts and proper spacing.'
+            });
+            
+            return recommendations;
+        }
+
+        function displayResults() {
+            // Update metric cards
+            document.getElementById('actionVerbCount').textContent = analysisResults.actionVerbCount;
+            document.getElementById('keywordMatch').textContent = analysisResults.keywordMatch + '%';
+            document.getElementById('fillerWords').textContent = analysisResults.fillerWordCount;
+            document.getElementById('readabilityScore').textContent = analysisResults.readabilityScore;
+            document.getElementById('atsScore').textContent = analysisResults.atsScore;
+
+            // Create heatmap
+            createHeatmap();
+            
+            // Update keyword analysis
+            updateKeywordAnalysis();
+            
+            // Update recommendations
+            updateRecommendations();
+        }
+
+        function createHeatmap() {
+            let highlightedText = resumeText;
+            
+            // Highlight action verbs (excellent)
+            analysisResults.foundActionVerbs.forEach(verb => {
+                const regex = new RegExp('\\b' + verb + '\\b', 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="highlight-excellent">$&</span>');
+            });
+            
+            // Highlight tech skills (good)
+            analysisResults.foundTechSkills.forEach(skill => {
+                const regex = new RegExp('\\b' + skill + '\\b', 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="highlight-good">$&</span>');
+            });
+            
+            // Highlight filler words (weak)
+            analysisResults.foundFillerWords.forEach(filler => {
+                const regex = new RegExp('\\b' + filler + '\\b', 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="highlight-filler">$&</span>');
+            });
+            
+            // Highlight weak words
+            weakWords.forEach(weak => {
+                const regex = new RegExp('\\b' + weak + '\\b', 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="highlight-weak">$&</span>');
+            });
+            
+            document.getElementById('resumeContent').innerHTML = highlightedText;
+        }
+
+        function updateKeywordAnalysis() {
+            // Tech skills
+            const techProgress = Math.min((analysisResults.foundTechSkills.length / 10) * 100, 100);
+            document.getElementById('techProgress').style.width = techProgress + '%';
+            
+            const techKeywordsHtml = techSkills.map(skill => {
+                const found = analysisResults.foundTechSkills.includes(skill);
+                return `<span class="keyword-tag ${found ? 'keyword-found' : 'keyword-missing'}">${skill}</span>`;
+            }).join('');
+            document.getElementById('techKeywords').innerHTML = techKeywordsHtml;
+            
+            // Action verbs
+            const actionProgress = Math.min((analysisResults.foundActionVerbs.length / 15) * 100, 100);
+            document.getElementById('actionProgress').style.width = actionProgress + '%';
+            
+            const actionKeywordsHtml = actionVerbs.map(verb => {
+                const found = analysisResults.foundActionVerbs.includes(verb);
+                return `<span class="keyword-tag ${found ? 'keyword-found' : 'keyword-missing'}">${verb}</span>`;
+            }).join('');
+            document.getElementById('actionKeywords').innerHTML = actionKeywordsHtml;
+            
+            // Industry keywords
+            const industryProgress = Math.min((analysisResults.foundIndustryKeywords.length / 8) * 100, 100);
+            document.getElementById('industryProgress').style.width = industryProgress + '%';
+            
+            const industryKeywordsHtml = industryKeywords.map(keyword => {
+                const found = analysisResults.foundIndustryKeywords.includes(keyword);
+                return `<span class="keyword-tag ${found ? 'keyword-found' : 'keyword-missing'}">${keyword}</span>`;
+            }).join('');
+            document.getElementById('industryKeywords').innerHTML = industryKeywordsHtml;
+        }
+
+        function updateRecommendations() {
+            const recommendationsHtml = analysisResults.recommendations.map(rec => 
+                `<div class="recommendation-item">
+                    <div class="recommendation-title">${rec.title}</div>
+                    <div>${rec.description}</div>
+                </div>`
+            ).join('');
+            document.getElementById('recommendationsList').innerHTML = recommendationsHtml;
+        }
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function exportResults(format) {
+            const timestamp = new Date().toISOString().split('T')[0];
+            
+            if (format === 'json') {
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    resumeText: resumeText,
+                    analysis: analysisResults,
+                    summary: {
+                        atsScore: analysisResults.atsScore,
+                        actionVerbCount: analysisResults.actionVerbCount,
+                        keywordMatchPercentage: analysisResults.keywordMatch,
+                        fillerWordCount: analysisResults.fillerWordCount,
+                        readabilityGrade: analysisResults.readabilityScore
+                    }
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resume-analysis-${timestamp}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+            } else if (format === 'html') {
+                const htmlReport = generateHTMLReport();
+                const blob = new Blob([htmlReport], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resume-analysis-${timestamp}.html`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+            } else if (format === 'pdf') {
+                // For demo purposes, we'll create a detailed text report
+                // In production, you'd use a PDF generation library
+                const textReport = generateTextReport();
+                const blob = new Blob([textReport], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resume-analysis-${timestamp}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert('PDF export requires a server-side PDF generation library. For this demo, a detailed text report has been generated.');
+            }
+        }
+
+        function generateHTMLReport() {
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Analysis Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .header { background: #0078d4; color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+        .metric { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #0078d4; }
+        .recommendation { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #ffc107; }
+        .highlight-excellent { background-color: rgba(0, 128, 0, 0.3); }
+        .highlight-good { background-color: rgba(255, 165, 0, 0.3); }
+        .highlight-weak { background-color: rgba(255, 0, 0, 0.3); }
+        .highlight-filler { background-color: rgba(128, 128, 128, 0.3); }
+        .resume-text { background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Resume Analysis Report</h1>
+        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+    </div>
+    
+    <h2>🎯 Overall Score</h2>
+    <div class="metric">
+        <h3>ATS Compatibility Score: ${analysisResults.atsScore}/100</h3>
+    </div>
+    
+    <h2>📈 Key Metrics</h2>
+    <div class="metric"><strong>Action Verbs Found:</strong> ${analysisResults.actionVerbCount}</div>
+    <div class="metric"><strong>Keyword Match:</strong> ${analysisResults.keywordMatch}%</div>
+    <div class="metric"><strong>Filler Words:</strong> ${analysisResults.fillerWordCount}</div>
+    <div class="metric"><strong>Readability Grade:</strong> ${analysisResults.readabilityScore}</div>
+    
+    <h2>💡 Recommendations</h2>
+    ${analysisResults.recommendations.map(rec => 
+        `<div class="recommendation"><strong>${rec.title}</strong><br>${rec.description}</div>`
+    ).join('')}
+    
+    <h2>🗺️ Resume Heatmap</h2>
+    <div class="resume-text">${document.getElementById('resumeContent').innerHTML}</div>
+    
+    <h2>🔍 Found Keywords</h2>
+    <div class="metric">
+        <h3>Technical Skills Found:</h3>
+        <p>${analysisResults.foundTechSkills.join(', ') || 'None detected'}</p>
+    </div>
+    <div class="metric">
+        <h3>Action Verbs Found:</h3>
+        <p>${analysisResults.foundActionVerbs.join(', ') || 'None detected'}</p>
+    </div>
+    <div class="metric">
+        <h3>Industry Keywords Found:</h3>
+        <p>${analysisResults.foundIndustryKeywords.join(', ') || 'None detected'}</p>
+    </div>
+</body>
+</html>`;
+        }
+
+        function generateTextReport() {
+            return `
+RESUME ANALYSIS REPORT
+Generated on: ${new Date().toLocaleDateString()}
+==================================================
+
+OVERALL ATS COMPATIBILITY SCORE: ${analysisResults.atsScore}/100
+
+KEY METRICS:
+- Action Verbs Found: ${analysisResults.actionVerbCount}
+- Keyword Match: ${analysisResults.keywordMatch}%
+- Filler Words: ${analysisResults.fillerWordCount}
+- Readability Grade: ${analysisResults.readabilityScore}
+
+RECOMMENDATIONS:
+${analysisResults.recommendations.map((rec, i) => 
+    `${i+1}. ${rec.title}\n   ${rec.description}`
+).join('\n\n')}
+
+FOUND KEYWORDS:
+- Technical Skills: ${analysisResults.foundTechSkills.join(', ') || 'None detected'}
+- Action Verbs: ${analysisResults.foundActionVerbs.join(', ') || 'None detected'}  
+- Industry Keywords: ${analysisResults.foundIndustryKeywords.join(', ') || 'None detected'}
+
+AREAS FOR IMPROVEMENT:
+${analysisResults.atsScore < 70 ? '- Overall ATS score needs improvement' : ''}
+${analysisResults.actionVerbCount < 8 ? '- Add more powerful action verbs' : ''}
+${analysisResults.keywordMatch < 30 ? '- Include more relevant keywords' : ''}
+${analysisResults.fillerWordCount > 5 ? '- Reduce filler words and weak language' : ''}
+
+==================================================
+Generated by Resume Heatmap Analyzer - Professional Edition
+            `;
+        }
+
+        // Initialize demo content
+        window.addEventListener('load', function() {
+            // Add sample resume text for demo
+            const sampleResume = `JOHN SMITH
+Software Engineer | Data Scientist | AI Specialist
+Phone: (555) 123-4567 | Email: john.smith@email.com
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc. | 2020-Present
+• Developed and implemented machine learning algorithms that increased prediction accuracy by 25%
+• Led cross-functional team of 8 engineers to deliver cloud-based solutions using AWS and Docker
+• Optimized database queries resulting in 40% performance improvement
+• Spearheaded migration to microservices architecture, reducing deployment time by 60%
+• Collaborated with product managers to define technical requirements for new features
+
+Data Scientist | DataWorks LLC | 2018-2020
+• Built predictive models using Python, TensorFlow, and scikit-learn for customer segmentation
+• Analyzed large datasets (10M+ records) to identify business insights and trends
+• Created automated reporting dashboards using Tableau and Power BI
+• Presented findings to C-level executives, influencing strategic business decisions
+• Mentored junior data scientists and established best practices for model deployment
+
+TECHNICAL SKILLS
+• Programming: Python, JavaScript, SQL, R, Java
+• Machine Learning: TensorFlow, PyTorch, scikit-learn, Pandas, NumPy
+• Cloud Platforms: AWS, Azure, Google Cloud Platform
+• Tools: Docker, Kubernetes, Git, Jenkins, Spark, Kafka
+• Databases: PostgreSQL, MongoDB, Redis
+
+EDUCATION
+Master of Science in Computer Science | Stanford University | 2018
+Bachelor of Science in Mathematics | UC Berkeley | 2016`;
+
+            document.getElementById('resumeInput').value = sampleResume;
+        });
+
+        // Add drag and drop functionality
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#0078d4';
+            uploadArea.style.background = 'rgba(0, 120, 212, 0.05)';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#e0e0e0';
+            uploadArea.style.background = 'white';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#e0e0e0';
+            uploadArea.style.background = 'white';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type === 'text/plain') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('resumeInput').value = e.target.result;
+                    };
+                    reader.readAsText(file);
+                } else {
+                    alert('Please upload a .txt file or paste text directly.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
