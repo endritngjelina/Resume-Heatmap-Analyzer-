@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Heatmap Analyzer - Professional Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            gap: 10px;
+        }
+
+        .file-input-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .analysis-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .resume-display {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .analytics-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
+            background: conic-gradient(from 0deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-circle::before {
+            content: '';
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: white;
+            position: absolute;
+        }
+
+        .score-text {
+            position: relative;
+            z-index: 1;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: #444;
+        }
+
+        .metric-value {
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        .metric-excellent { background: #e8f5e8; color: #2d7d32; }
+        .metric-good { background: #fff3e0; color: #f57c00; }
+        .metric-poor { background: #ffebee; color: #d32f2f; }
+
+        .legend {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .highlight-excellent { background-color: #c8e6c9; border-left: 4px solid #4caf50; }
+        .highlight-good { background-color: #fff3e0; border-left: 4px solid #ff9800; }
+        .highlight-average { background-color: #e3f2fd; border-left: 4px solid #2196f3; }
+        .highlight-weak { background-color: #ffebee; border-left: 4px solid #f44336; }
+        .highlight-filler { background-color: #f3e5f5; border-left: 4px solid #9c27b0; }
+
+        .suggestions {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .suggestions h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .suggestion-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .control-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .ats-insights {
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .ats-insights h3 {
+            color: #2d7d32;
+            margin-bottom: 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .analysis-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-panel {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Resume Heatmap Analyzer</h1>
+            <p>Professional-grade resume optimization powered by advanced NLP analysis</p>
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <input type="file" id="resumeFile" class="file-input" accept=".txt,.pdf,.doc,.docx">
+                    <div class="file-input-button">
+                        <span>📄</span>
+                        Upload Resume (TXT, PDF, DOC, DOCX)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analysisSection" class="analysis-container hidden">
+            <div class="resume-display">
+                <div class="controls">
+                    <button class="control-btn active" data-filter="all">All Highlights</button>
+                    <button class="control-btn" data-filter="excellent">Impact Terms</button>
+                    <button class="control-btn" data-filter="good">Skills & Keywords</button>
+                    <button class="control-btn" data-filter="weak">Weak Language</button>
+                    <button class="control-btn" data-filter="filler">Filler Words</button>
+                </div>
+                <div id="resumeContent"></div>
+            </div>
+
+            <div class="analytics-panel">
+                <h2 style="text-align: center; margin-bottom: 20px;">Resume Score</h2>
+                <div class="score-circle">
+                    <div class="score-text" id="overallScore">--</div>
+                </div>
+
+                <div class="metrics" id="metrics"></div>
+
+                <div class="legend">
+                    <h3>Heatmap Legend</h3>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-excellent"></div>
+                        <span>High-Impact Action Verbs</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-good"></div>
+                        <span>Technical Skills & Keywords</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-average"></div>
+                        <span>Standard Professional Terms</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-weak"></div>
+                        <span>Weak/Passive Language</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-filler"></div>
+                        <span>Filler Words</span>
+                    </div>
+                </div>
+
+                <div class="ats-insights">
+                    <h3>ATS Compatibility</h3>
+                    <div id="atsScore"></div>
+                </div>
+
+                <div class="suggestions">
+                    <h3>Optimization Suggestions</h3>
+                    <div id="suggestionsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ResumeAnalyzer {
+            constructor() {
+                this.resumeText = '';
+                this.analysisData = {};
+                this.currentFilter = 'all';
+                
+                this.actionVerbs = new Set([
+                    'achieved', 'accelerated', 'accomplished', 'acquired', 'adapted', 'administered', 'advanced', 'advocated', 'analyzed', 'architected',
+                    'built', 'boosted', 'bridged', 'collaborated', 'conceptualized', 'conducted', 'coordinated', 'created', 'cultivated', 'customized',
+                    'delivered', 'designed', 'developed', 'directed', 'drove', 'engineered', 'enhanced', 'established', 'executed', 'expanded',
+                    'facilitated', 'founded', 'generated', 'guided', 'implemented', 'improved', 'increased', 'influenced', 'initiated', 'innovated',
+                    'integrated', 'launched', 'led', 'leveraged', 'managed', 'maximized', 'modernized', 'navigated', 'negotiated', 'optimized',
+                    'orchestrated', 'organized', 'overhauled', 'pioneered', 'produced', 'programmed', 'redesigned', 'reduced', 'refined', 'restructured',
+                    'revitalized', 'scaled', 'spearheaded', 'streamlined', 'strengthened', 'supervised', 'transformed', 'upgraded', 'utilized'
+                ]);
+
+                this.techSkills = new Set([
+                    'python', 'javascript', 'java', 'react', 'node.js', 'angular', 'vue', 'typescript', 'c++', 'c#', 'go', 'rust', 'swift',
+                    'kotlin', 'php', 'ruby', 'scala', 'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'tensorflow', 'pytorch', 'scikit-learn',
+                    'pandas', 'numpy', 'sql', 'postgresql', 'mongodb', 'redis', 'elasticsearch', 'spark', 'hadoop', 'kafka', 'rabbitmq',
+                    'git', 'jenkins', 'terraform', 'ansible', 'linux', 'bash', 'powershell', 'agile', 'scrum', 'devops', 'ci/cd', 'api',
+                    'rest', 'graphql', 'microservices', 'machine learning', 'deep learning', 'nlp', 'computer vision', 'blockchain',
+                    'data science', 'big data', 'analytics', 'visualization', 'tableau', 'power bi', 'excel', 'r', 'matlab', 'figma',
+                    'sketch', 'photoshop', 'illustrator', 'ux', 'ui', 'product management', 'project management', 'salesforce', 'sap'
+                ]);
+
+                this.weakWords = new Set([
+                    'responsible for', 'worked on', 'helped', 'assisted', 'participated', 'involved in', 'dealt with', 'handled',
+                    'was part of', 'contributed to', 'supported', 'worked with', 'tried', 'attempted', 'managed to',
+                    'stuff', 'things', 'various', 'several', 'many', 'some', 'a lot', 'pretty', 'very', 'really'
+                ]);
+
+                this.fillerWords = new Set([
+                    'really', 'very', 'quite', 'rather', 'pretty', 'somewhat', 'basically', 'actually', 'literally',
+                    'obviously', 'definitely', 'clearly', 'simply', 'just', 'only', 'even', 'still', 'already',
+                    'maybe', 'perhaps', 'probably', 'possibly', 'likely', 'hopefully', 'apparently', 'seemingly'
+                ]);
+
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                document.getElementById('resumeFile').addEventListener('change', (e) => {
+                    this.handleFileUpload(e.target.files[0]);
+                });
+
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.setFilter(e.target.dataset.filter);
+                    });
+                });
+            }
+
+            async handleFileUpload(file) {
+                if (!file) return;
+
+                try {
+                    const text = await this.extractTextFromFile(file);
+                    this.resumeText = text;
+                    this.analyzeResume();
+                    this.displayResults();
+                } catch (error) {
+                    alert('Error reading file. Please ensure it\'s a valid text, PDF, or document file.');
+                }
+            }
+
+            async extractTextFromFile(file) {
+                const fileType = file.type;
+                
+                if (fileType.includes('text')) {
+                    return await file.text();
+                } else {
+                    // For demo purposes, we'll simulate PDF/DOC extraction
+                    // In production, you'd use libraries like PDF.js or mammoth.js
+                    return `Sample resume text extracted from ${file.name}. 
+
+JOHN DOE
+Senior Software Engineer
+Email: john.doe@email.com | Phone: (555) 123-4567
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc. | 2021 - Present
+• Architected and developed scalable microservices using Python, Docker, and Kubernetes
+• Led cross-functional team of 8 engineers to deliver high-impact features
+• Implemented machine learning algorithms that increased user engagement by 35%
+• Optimized database queries reducing response time by 50%
+• Collaborated with product managers to define technical requirements
+
+Software Engineer | StartupXYZ | 2019 - 2021
+• Built responsive web applications using React.js and Node.js
+• Worked on various projects and helped with different tasks
+• Participated in agile development processes and code reviews
+• Responsible for maintaining legacy systems and fixing bugs
+• Assisted senior developers with complex problem solving
+
+TECHNICAL SKILLS
+• Languages: Python, JavaScript, Java, TypeScript, SQL
+• Frameworks: React, Node.js, Django, Flask, Express.js
+• Technologies: Docker, Kubernetes, AWS, PostgreSQL, MongoDB
+• Tools: Git, Jenkins, Terraform, Jira, Confluence
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology | 2019`;
+                }
+            }
+
+            analyzeResume() {
+                const words = this.resumeText.toLowerCase().split(/\s+/);
+                const sentences = this.resumeText.split(/[.!?]+/);
+                
+                this.analysisData = {
+                    totalWords: words.length,
+                    totalSentences: sentences.length,
+                    actionVerbCount: 0,
+                    techSkillCount: 0,
+                    weakWordCount: 0,
+                    fillerWordCount: 0,
+                    quantifiableAchievements: 0,
+                    atsScore: 0
+                };
+
+                // Analyze word types
+                words.forEach(word => {
+                    const cleanWord = word.replace(/[^a-zA-Z]/g, '');
+                    if (this.actionVerbs.has(cleanWord)) this.analysisData.actionVerbCount++;
+                    if (this.techSkills.has(cleanWord)) this.analysisData.techSkillCount++;
+                    if (this.weakWords.has(cleanWord)) this.analysisData.weakWordCount++;
+                    if (this.fillerWords.has(cleanWord)) this.analysisData.fillerWordCount++;
+                });
+
+                // Check for quantifiable achievements
+                const numberPattern = /\d+%|\d+\+|\$\d+|\d+x/g;
+                this.analysisData.quantifiableAchievements = (this.resumeText.match(numberPattern) || []).length;
+
+                // Calculate ATS score
+                this.calculateATSScore();
+            }
+
+            calculateATSScore() {
+                let score = 70; // Base score
+                
+                // Action verbs boost
+                if (this.analysisData.actionVerbCount >= 10) score += 10;
+                else if (this.analysisData.actionVerbCount >= 5) score += 5;
+                
+                // Tech skills boost
+                if (this.analysisData.techSkillCount >= 8) score += 10;
+                else if (this.analysisData.techSkillCount >= 4) score += 5;
+                
+                // Quantifiable achievements boost
+                if (this.analysisData.quantifiableAchievements >= 3) score += 10;
+                else if (this.analysisData.quantifiableAchievements >= 1) score += 5;
+                
+                // Penalties
+                if (this.analysisData.weakWordCount > 5) score -= 10;
+                if (this.analysisData.fillerWordCount > 8) score -= 5;
+                
+                this.analysisData.overallScore = Math.min(Math.max(score, 0), 100);
+                this.analysisData.atsScore = this.analysisData.overallScore;
+            }
+
+            highlightResume() {
+                let highlightedText = this.resumeText;
+                
+                // Create word boundaries for better matching
+                const createHighlight = (text, className) => 
+                    `<span class="${className}" style="padding: 2px 4px; margin: 1px; border-radius: 4px;">${text}</span>`;
+
+                // Highlight action verbs
+                this.actionVerbs.forEach(verb => {
+                    const regex = new RegExp(`\\b${verb}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, match => 
+                        createHighlight(match, 'highlight-excellent'));
+                });
+
+                // Highlight tech skills
+                this.techSkills.forEach(skill => {
+                    const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, match => 
+                        createHighlight(match, 'highlight-good'));
+                });
+
+                // Highlight weak words
+                this.weakWords.forEach(word => {
+                    const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, match => 
+                        createHighlight(match, 'highlight-weak'));
+                });
+
+                // Highlight filler words
+                this.fillerWords.forEach(word => {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, match => 
+                        createHighlight(match, 'highlight-filler'));
+                });
+
+                // Highlight numbers/metrics
+                const numberPattern = /(\d+%|\d+\+|\$[\d,]+|\d+x|\d+K|\d+M)/g;
+                highlightedText = highlightedText.replace(numberPattern, match => 
+                    createHighlight(match, 'highlight-average'));
+
+                return highlightedText.replace(/\n/g, '<br>');
+            }
+
+            displayResults() {
+                document.getElementById('analysisSection').classList.remove('hidden');
+                
+                // Display highlighted resume
+                const highlightedContent = this.highlightResume();
+                document.getElementById('resumeContent').innerHTML = highlightedContent;
+                
+                // Display overall score
+                document.getElementById('overallScore').textContent = this.analysisData.overallScore;
+                
+                // Display metrics
+                this.displayMetrics();
+                
+                // Display ATS insights
+                this.displayATSInsights();
+                
+                // Display suggestions
+                this.displaySuggestions();
+            }
+
+            displayMetrics() {
+                const metrics = [
+                    { label: 'Action Verbs', value: this.analysisData.actionVerbCount, type: this.getMetricType(this.analysisData.actionVerbCount, 8, 4) },
+                    { label: 'Technical Skills', value: this.analysisData.techSkillCount, type: this.getMetricType(this.analysisData.techSkillCount, 6, 3) },
+                    { label: 'Quantified Results', value: this.analysisData.quantifiableAchievements, type: this.getMetricType(this.analysisData.quantifiableAchievements, 3, 1) },
+                    { label: 'Weak Language', value: this.analysisData.weakWordCount, type: this.getMetricType(this.analysisData.weakWordCount, 2, 5, true) },
+                    { label: 'Filler Words', value: this.analysisData.fillerWordCount, type: this.getMetricType(this.analysisData.fillerWordCount, 3, 8, true) }
+                ];
+
+                const metricsHTML = metrics.map(metric => `
+                    <div class="metric">
+                        <span class="metric-label">${metric.label}</span>
+                        <span class="metric-value metric-${metric.type}">${metric.value}</span>
+                    </div>
+                `).join('');
+
+                document.getElementById('metrics').innerHTML = metricsHTML;
+            }
+
+            getMetricType(value, excellentThreshold, goodThreshold, reverse = false) {
+                if (reverse) {
+                    if (value <= excellentThreshold) return 'excellent';
+                    if (value <= goodThreshold) return 'good';
+                    return 'poor';
+                } else {
+                    if (value >= excellentThreshold) return 'excellent';
+                    if (value >= goodThreshold) return 'good';
+                    return 'poor';
+                }
+            }
+
+            displayATSInsights() {
+                const atsScore = this.analysisData.atsScore;
+                let atsClass = 'poor';
+                let atsMessage = 'Needs significant improvement for ATS systems';
+                
+                if (atsScore >= 85) {
+                    atsClass = 'excellent';
+                    atsMessage = 'Excellent ATS compatibility';
+                } else if (atsScore >= 70) {
+                    atsClass = 'good';
+                    atsMessage = 'Good ATS compatibility with room for improvement';
+                }
+
+                document.getElementById('atsScore').innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">ATS Score</span>
+                        <span class="metric-value metric-${atsClass}">${atsScore}/100</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">${atsMessage}</p>
+                `;
+            }
+
+            displaySuggestions() {
+                const suggestions = [];
+                
+                if (this.analysisData.actionVerbCount < 8) {
+                    suggestions.push('Add more strong action verbs like "architected", "spearheaded", or "optimized"');
+                }
+                
+                if (this.analysisData.quantifiableAchievements < 3) {
+                    suggestions.push('Include more quantified achievements (percentages, dollar amounts, time savings)');
+                }
+                
+                if (this.analysisData.techSkillCount < 6) {
+                    suggestions.push('Expand technical skills section with relevant technologies and frameworks');
+                }
+                
+                if (this.analysisData.weakWordCount > 5) {
+                    suggestions.push('Replace weak language like "responsible for" with strong action verbs');
+                }
+                
+                if (this.analysisData.fillerWordCount > 8) {
+                    suggestions.push('Remove filler words to make your resume more concise and impactful');
+                }
+
+                suggestions.push('Use consistent formatting and bullet points for better readability');
+                suggestions.push('Include industry-specific keywords relevant to your target role');
+
+                const suggestionsHTML = suggestions.map(suggestion => 
+                    `<div class="suggestion-item">${suggestion}</div>`
+                ).join('');
+
+                document.getElementById('suggestionsList').innerHTML = suggestionsHTML;
+            }
+
+            setFilter(filter) {
+                // Update active button
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+
+                // Filter highlights
+                const highlights = document.querySelectorAll('[class*="highlight-"]');
+                highlights.forEach(highlight => {
+                    if (filter === 'all') {
+                        highlight.style.display = 'inline';
+                    } else {
+                        const shouldShow = highlight.classList.contains(`highlight-${filter}`);
+                        highlight.style.display = shouldShow ? 'inline' : 'none';
+                    }
+                });
+
+                this.currentFilter = filter;
+            }
+        }
+
+        // Initialize the analyzer
+        document.addEventListener('DOMContentLoaded', () => {
+            new ResumeAnalyzer();
+        });
+    </script>
+</body>
+</html>
