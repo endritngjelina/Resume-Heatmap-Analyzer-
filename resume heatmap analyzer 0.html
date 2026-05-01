@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Heatmap Analyzer | Professional Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #232F3E, #37475A);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-100px); }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .upload-section {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #FF9900;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 40px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: #f8f9fa;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #FF9900;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #FF9900, #FF7700);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 153, 0, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 153, 0, 0.4);
+        }
+
+        .analysis-section {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border-left: 4px solid #FF9900;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #232F3E;
+            display: block;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .resume-display {
+            grid-column: 1 / -1;
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .heatmap-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .excellent { background-color: #22c55e; }
+        .good { background-color: #84cc16; }
+        .average { background-color: #eab308; }
+        .poor { background-color: #f97316; }
+        .critical { background-color: #ef4444; }
+
+        .resume-text {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #333;
+            white-space: pre-wrap;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .insights-panel {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .insight-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid #FF9900;
+        }
+
+        .insight-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #232F3E;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insight-content {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .keyword-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .keyword-tag {
+            background: linear-gradient(135deg, #FF9900, #FF7700);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #84cc16);
+            transition: width 0.3s ease;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #FF9900;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .recommendations {
+            background: linear-gradient(135deg, #e8f4fd, #f0f8ff);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+        }
+
+        .recommendation-icon {
+            font-size: 1.5rem;
+            color: #FF9900;
+        }
+
+        .ats-score {
+            text-align: center;
+            background: linear-gradient(135deg, #232F3E, #37475A);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #22c55e 0deg, #84cc16 90deg, #eab308 180deg, #f97316 270deg, #ef4444 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .score-inner {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #232F3E;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .insights-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .highlight-excellent { background-color: rgba(34, 197, 94, 0.3); }
+        .highlight-good { background-color: rgba(132, 204, 22, 0.3); }
+        .highlight-average { background-color: rgba(234, 179, 8, 0.3); }
+        .highlight-poor { background-color: rgba(249, 115, 22, 0.3); }
+        .highlight-critical { background-color: rgba(239, 68, 68, 0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Resume Heatmap Analyzer</h1>
+            <p>Professional-Grade Resume Analysis & Optimization Tool</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Upload Your Resume</div>
+                    <div class="upload-subtext">Supports PDF, DOC, DOCX, and TXT formats</div>
+                    <button class="btn">Choose File</button>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx,.txt" onchange="handleFileUpload(event)">
+                
+                <div class="loading" id="loadingDiv">
+                    <div class="spinner"></div>
+                    <p>Analyzing your resume with advanced algorithms...</p>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <h3>Performance Metrics</h3>
+                <div class="metrics-grid" id="metricsGrid">
+                    <div class="metric-card">
+                        <span class="metric-value" id="overallScore">--</span>
+                        <div class="metric-label">Overall Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="atsScore">--</span>
+                        <div class="metric-label">ATS Compatibility</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="keywordDensity">--</span>
+                        <div class="metric-label">Keyword Density</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="readabilityScore">--</span>
+                        <div class="metric-label">Readability</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="resume-display" id="resumeDisplay" style="display: none;">
+            <h3>Resume Heatmap Analysis</h3>
+            <div class="heatmap-legend">
+                <div class="legend-item">
+                    <div class="legend-color excellent"></div>
+                    <span>Excellent (Action Verbs, Quantified Results)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color good"></div>
+                    <span>Good (Strong Keywords, Technical Skills)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color average"></div>
+                    <span>Average (Standard Content)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color poor"></div>
+                    <span>Poor (Weak Language, Filler Words)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color critical"></div>
+                    <span>Critical (Red Flags, Clichés)</span>
+                </div>
+            </div>
+            <div class="resume-text" id="resumeText"></div>
+        </div>
+
+        <div class="insights-panel" id="insightsPanel" style="display: none;">
+            <div class="insight-card">
+                <div class="insight-title">
+                    🎯 Action Verbs Analysis
+                </div>
+                <div class="insight-content" id="actionVerbsInsight">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="actionVerbsProgress"></div>
+                    </div>
+                    <p id="actionVerbsText"></p>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">
+                    📊 Quantified Achievements
+                </div>
+                <div class="insight-content" id="quantifiedInsight">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="quantifiedProgress"></div>
+                    </div>
+                    <p id="quantifiedText"></p>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">
+                    🔧 Technical Keywords
+                </div>
+                <div class="insight-content" id="technicalInsight">
+                    <div id="foundKeywords" class="keyword-list"></div>
+                    <p id="technicalText"></p>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">
+                    ⚠️ Areas for Improvement
+                </div>
+                <div class="insight-content">
+                    <div class="recommendations" id="recommendations"></div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">
+                    🤖 ATS Optimization Score
+                </div>
+                <div class="ats-score">
+                    <div class="score-circle">
+                        <div class="score-inner" id="atsScoreDisplay">--</div>
+                    </div>
+                    <p>This score indicates how well your resume will perform in Applicant Tracking Systems</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Advanced Resume Analysis Engine
+        class ResumeAnalyzer {
+            constructor() {
+                this.actionVerbs = [
+                    'achieved', 'improved', 'increased', 'developed', 'created', 'implemented', 'managed', 'led', 
+                    'optimized', 'streamlined', 'delivered', 'executed', 'launched', 'built', 'designed',
+                    'spearheaded', 'orchestrated', 'transformed', 'revolutionized', 'pioneered', 'accelerated',
+                    'enhanced', 'automated', 'scaled', 'collaborated', 'facilitated', 'mentored', 'trained'
+                ];
+
+                this.technicalKeywords = [
+                    // Programming Languages
+                    'javascript', 'python', 'java', 'c++', 'c#', 'react', 'angular', 'vue', 'node.js', 'typescript',
+                    'go', 'rust', 'kotlin', 'swift', 'php', 'ruby', 'scala', 'r', 'matlab',
+                    
+                    // Cloud & DevOps
+                    'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'terraform', 'ansible', 'git',
+                    'ci/cd', 'devops', 'microservices', 'serverless', 'lambda', 'ec2', 's3',
+                    
+                    // Data & Analytics
+                    'sql', 'nosql', 'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch', 'hadoop',
+                    'spark', 'kafka', 'tableau', 'power bi', 'machine learning', 'ai', 'data science',
+                    'pandas', 'numpy', 'tensorflow', 'pytorch', 'scikit-learn',
+                    
+                    // Methodologies
+                    'agile', 'scrum', 'kanban', 'lean', 'six sigma', 'rest api', 'graphql', 'oauth',
+                    'jwt', 'ssl', 'tls', 'encryption', 'security', 'penetration testing', 'compliance'
+                ];
+
+                this.weakWords = [
+                    'responsible for', 'duties included', 'worked on', 'helped with', 'assisted',
+                    'participated in', 'was involved', 'contributed to', 'supported', 'handled'
+                ];
+
+                this.fillerWords = [
+                    'very', 'really', 'quite', 'just', 'simply', 'basically', 'literally',
+                    'actually', 'obviously', 'clearly', 'definitely', 'absolutely'
+                ];
+
+                this.cliches = [
+                    'team player', 'results-driven', 'detail-oriented', 'self-motivated',
+                    'proven track record', 'think outside the box', 'hit the ground running',
+                    'go-getter', 'people person', 'hard worker'
+                ];
+            }
+
+            analyzeResume(text) {
+                const words = text.toLowerCase().split(/\s+/);
+                const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                
+                const analysis = {
+                    totalWords: words.length,
+                    totalSentences: sentences.length,
+                    actionVerbs: this.findMatches(text, this.actionVerbs),
+                    technicalKeywords: this.findMatches(text, this.technicalKeywords),
+                    weakWords: this.findMatches(text, this.weakWords),
+                    fillerWords: this.findMatches(text, this.fillerWords),
+                    cliches: this.findMatches(text, this.cliches),
+                    quantifiedAchievements: this.findQuantifiedAchievements(text),
+                    readabilityScore: this.calculateReadabilityScore(text),
+                    atsScore: this.calculateATSScore(text),
+                    overallScore: 0
+                };
+
+                analysis.overallScore = this.calculateOverallScore(analysis);
+                return analysis;
+            }
+
+            findMatches(text, terms) {
+                const matches = [];
+                const lowerText = text.toLowerCase();
+                
+                terms.forEach(term => {
+                    const regex = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                    const found = text.match(regex);
+                    if (found) {
+                        matches.push({
+                            term: term,
+                            count: found.length,
+                            matches: found
+                        });
+                    }
+                });
+                
+                return matches;
+            }
+
+            findQuantifiedAchievements(text) {
+                const patterns = [
+                    /\b\d+%\b/g,
+                    /\$[\d,]+(?:\.\d{2})?\b/g,
+                    /\b\d+(?:,\d{3})*(?:\.\d+)?\s*(?:million|billion|thousand|k|m|b)\b/gi,
+                    /\b(?:increased|decreased|improved|reduced|grew|saved|generated)\s+(?:by\s+)?\d+/gi,
+                    /\b\d+\s*(?:years?|months?|weeks?|days?)\b/g
+                ];
+                
+                let matches = [];
+                patterns.forEach(pattern => {
+                    const found = text.match(pattern);
+                    if (found) {
+                        matches = matches.concat(found);
+                    }
+                });
+                
+                return matches;
+            }
+
+            calculateReadabilityScore(text) {
+                const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                const words = text.split(/\s+/);
+                const syllables = this.countSyllables(text);
+                
+                if (sentences.length === 0 || words.length === 0) return 0;
+                
+                // Flesch Reading Ease Score
+                const score = 206.835 - (1.015 * (words.length / sentences.length)) - (84.6 * (syllables / words.length));
+                return Math.max(0, Math.min(100, Math.round(score)));
+            }
+
+            countSyllables(text) {
+                return text.toLowerCase().split(/\s+/).reduce((total, word) => {
+                    return total + this.countWordSyllables(word);
+                }, 0);
+            }
+
+            countWordSyllables(word) {
+                word = word.replace(/[^a-z]/g, '');
+                if (word.length === 0) return 0;
+                
+                const vowels = 'aeiouy';
+                let count = 0;
+                let previousWasVowel = false;
+                
+                for (let i = 0; i < word.length; i++) {
+                    const isVowel = vowels.includes(word[i]);
+                    if (isVowel && !previousWasVowel) {
+                        count++;
+                    }
+                    previousWasVowel = isVowel;
+                }
+                
+                if (word.endsWith('e')) count--;
+                return Math.max(1, count);
+            }
+
+            calculateATSScore(text) {
+                let score = 0;
+                const maxScore = 100;
+                
+                // Technical keywords (30 points)
+                const techKeywordMatches = this.findMatches(text, this.technicalKeywords);
+                const uniqueTechKeywords = techKeywordMatches.length;
+                score += Math.min(30, uniqueTechKeywords * 2);
+                
+                // Action verbs (25 points)
+                const actionVerbMatches = this.findMatches(text, this.actionVerbs);
+                const uniqueActionVerbs = actionVerbMatches.length;
+                score += Math.min(25, uniqueActionVerbs * 2);
+                
+                // Quantified achievements (25 points)
+                const quantified = this.findQuantifiedAchievements(text);
+                score += Math.min(25, quantified.length * 3);
+                
+                // Format and structure (20 points)
+                const hasContactInfo = /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text);
+                const hasSections = /(?:experience|education|skills|projects)/gi.test(text);
+                const hasProperLength = text.length > 200 && text.length < 3000;
+                
+                if (hasContactInfo) score += 7;
+                if (hasSections) score += 8;
+                if (hasProperLength) score += 5;
+                
+                return Math.round(score);
+            }
+
+            calculateOverallScore(analysis) {
+                let score = 0;
+                
+                // Action verbs contribute 25%
+                const actionVerbScore = Math.min(25, analysis.actionVerbs.length * 2);
+                score += actionVerbScore;
+                
+                // Technical keywords contribute 25%
+                const techScore = Math.min(25, analysis.technicalKeywords.length * 1.5);
+                score += techScore;
+                
+                // Quantified achievements contribute 25%
+                const quantScore = Math.min(25, analysis.quantifiedAchievements.length * 4);
+                score += quantScore;
+                
+                // Readability contributes 15%
+                const readScore = (analysis.readabilityScore / 100) * 15;
+                score += readScore;
+                
+                // Deduct points for weak words and cliches (10%)
+                const weakPenalty = Math.min(10, (analysis.weakWords.length + analysis.cliches.length) * 2);
+                score -= weakPenalty;
+                
+                return Math.max(0, Math.min(100, Math.round(score)));
+            }
+
+            generateHeatmap(text, analysis) {
+                let highlightedText = text;
+                
+                // Highlight excellent content (action verbs, quantified achievements)
+                analysis.actionVerbs.forEach(item => {
+                    const regex = new RegExp(`\\b${item.term}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight-excellent">${item.term}</span>`);
+                });
+                
+                analysis.quantifiedAchievements.forEach(achievement => {
+                    const escaped = achievement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escaped, 'gi');
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight-excellent">${achievement}</span>`);
+                });
+                
+                // Highlight good content (technical keywords)
+                analysis.technicalKeywords.forEach(item => {
+                    const regex = new RegExp(`\\b${item.term}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight-good">${item.term}</span>`);
+                });
+                
+                // Highlight poor content (weak words)
+                analysis.weakWords.forEach(item => {
+                    const regex = new RegExp(item.term, 'gi');
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight-poor">${item.term}</span>`);
+                });
+                
+                // Highlight critical content (cliches, filler words)
+                analysis.cliches.forEach(item => {
+                    const regex = new RegExp(item.term, 'gi');
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight-critical">${item.term}</span>`);
+                });
+                
+                analysis.fillerWords.forEach(item => {
+                    const regex = new RegExp(`\\b${item.term}\\b`, 'gi');
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight-critical">${item.term}</span>`);
+                });
+                
+                return highlightedText;
+            }
+
+            generateRecommendations(analysis) {
+                const recommendations = [];
+                
+                if (analysis.actionVerbs.length < 5) {
+                    recommendations.push({
+                        icon: "💪",
+                        text: "Add more strong action verbs like 'achieved', 'implemented', 'optimized' to make your contributions more impactful."
+                    });
+                }
+                
+                if (analysis.quantifiedAchievements.length < 3) {
+                    recommendations.push({
+                        icon: "📈",
+                        text: "Include specific metrics and numbers to quantify your achievements (e.g., 'Increased sales by 25%', 'Managed team of 12')."
+                    });
+                }
+                
+                if (analysis.technicalKeywords.length < 8) {
+                    recommendations.push({
+                        icon: "🔧",
+                        text: "Include more relevant technical skills and industry keywords that match your target job descriptions."
+                    });
+                }
+                
+                if (analysis.weakWords.length > 3) {
+                    recommendations.push({
+                        icon: "⚡",
+                        text: "Replace weak phrases like 'responsible for' or 'helped with' with stronger action-oriented language."
+                    });
+                }
+                
+                if (analysis.cliches.length > 0) {
+                    recommendations.push({
+                        icon: "🎯",
+                        text: "Remove overused phrases and clichés. Be specific about your unique contributions instead."
+                    });
+                }
+                
+                if (analysis.readabilityScore < 60) {
+                    recommendations.push({
+                        icon: "📝",
+                        text: "Improve readability by using shorter sentences and clearer language structure."
+                    });
+                }
+                
+                if (analysis.atsScore < 70) {
+                    recommendations.push({
+                        icon: "🤖",
+                        text: "Optimize for ATS systems by including more industry-specific keywords and proper formatting."
+                    });
+                }
+                
+                return recommendations;
+            }
+        }
+
+        // Global variables
+        let analyzer = new ResumeAnalyzer();
+        let currentAnalysis = null;
+
+        // File upload handler
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const loadingDiv = document.getElementById('loadingDiv');
+            const uploadArea = document.querySelector('.upload-area');
+            
+            // Show loading state
+            uploadArea.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            try {
+                let text = '';
+                
+                if (file.type === 'text/plain') {
+                    text = await readTextFile(file);
+                } else if (file.type === 'application/pdf') {
+                    // For demo purposes, we'll simulate PDF reading
+                    text = await simulatePDFReading(file);
+                } else {
+                    // For DOC/DOCX, we'll also simulate
+                    text = await simulateDocReading(file);
+                }
+
+                // Simulate processing time for realistic UX
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                processResumeText(text);
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                alert('Error processing file. Please try again with a different file.');
+                resetUploadState();
+            }
+        }
+
+        function readTextFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Simulate PDF reading (in real implementation, you'd use PDF.js)
+        async function simulatePDFReading(file) {
+            return `John Smith
+Software Engineer | Full Stack Developer
+
+Contact Information:
+Email: john.smith@email.com
+Phone: (555) 123-4567
+LinkedIn: linkedin.com/in/johnsmith
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | Tech Solutions Inc. | 2020 - Present
+• Developed and maintained 15+ web applications using React.js, Node.js, and MongoDB
+• Implemented automated testing framework that reduced deployment time by 40%
+• Led a team of 5 developers in delivering critical features ahead of schedule
+• Optimized database queries resulting in 60% improvement in application performance
+• Collaborated with product managers to define technical requirements for new features
+
+Software Developer | StartupCorp | 2018 - 2020
+• Built responsive web applications using JavaScript, HTML5, and CSS3
+• Integrated third-party APIs and payment gateways for e-commerce platform
+• Participated in code reviews and mentored junior developers
+• Worked on agile development team following scrum methodology
+• Helped with debugging and troubleshooting production issues
+
+TECHNICAL SKILLS
+Programming Languages: JavaScript, Python, Java, TypeScript
+Frontend: React.js, Angular, Vue.js, HTML5, CSS3, SASS
+Backend: Node.js, Express.js, Django, Spring Boot
+Databases: MongoDB, PostgreSQL, MySQL, Redis
+Cloud: AWS, Docker, Kubernetes, Jenkins
+Tools: Git, Jenkins, JIRA, Confluence
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology | 2014 - 2018
+GPA: 3.8/4.0
+
+PROJECTS
+E-Commerce Platform | 2021
+Developed a full-stack e-commerce solution serving 10,000+ users
+Technologies: React, Node.js, MongoDB, AWS
+Features: Real-time inventory, payment integration, admin dashboard
+
+ACHIEVEMENTS
+• Increased team productivity by 35% through process improvements
+• Reduced application load time by 50% through code optimization
+• Successfully delivered 12 major features with zero critical bugs
+• Mentored 8 junior developers leading to 3 internal promotions`;
+        }
+
+        // Simulate DOC reading
+        async function simulateDocReading(file) {
+            return simulatePDFReading(file); // Same content for demo
+        }
+
+        function processResumeText(text) {
+            currentAnalysis = analyzer.analyzeResume(text);
+            const highlightedText = analyzer.generateHeatmap(text, currentAnalysis);
+            
+            // Update UI
+            updateMetrics(currentAnalysis);
+            displayHeatmap(highlightedText);
+            displayInsights(currentAnalysis);
+            
+            // Hide loading and show results
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('resumeDisplay').style.display = 'block';
+            document.getElementById('insightsPanel').style.display = 'grid';
+        }
+
+        function updateMetrics(analysis) {
+            document.getElementById('overallScore').textContent = analysis.overallScore + '/100';
+            document.getElementById('atsScore').textContent = analysis.atsScore + '/100';
+            document.getElementById('keywordDensity').textContent = 
+                Math.round((analysis.technicalKeywords.length / analysis.totalWords * 100) * 100) / 100 + '%';
+            document.getElementById('readabilityScore').textContent = analysis.readabilityScore + '/100';
+            
+            // Update ATS score display
+            document.getElementById('atsScoreDisplay').textContent = analysis.atsScore;
+        }
+
+        function displayHeatmap(highlightedText) {
+            document.getElementById('resumeText').innerHTML = highlightedText;
+        }
+
+        function displayInsights(analysis) {
+            // Action Verbs
+            const actionVerbsProgress = Math.min(100, (analysis.actionVerbs.length / 10) * 100);
+            document.getElementById('actionVerbsProgress').style.width = actionVerbsProgress + '%';
+            document.getElementById('actionVerbsText').innerHTML = 
+                `Found <strong>${analysis.actionVerbs.length}</strong> strong action verbs. ${analysis.actionVerbs.length < 8 ? 'Consider adding more impactful verbs.' : 'Excellent use of action-oriented language!'}`;
+
+            // Quantified Achievements
+            const quantifiedProgress = Math.min(100, (analysis.quantifiedAchievements.length / 8) * 100);
+            document.getElementById('quantifiedProgress').style.width = quantifiedProgress + '%';
+            document.getElementById('quantifiedText').innerHTML = 
+                `Identified <strong>${analysis.quantifiedAchievements.length}</strong> quantified achievements. ${analysis.quantifiedAchievements.length < 5 ? 'Add more specific metrics and numbers.' : 'Great job quantifying your impact!'}`;
+
+            // Technical Keywords
+            const foundKeywordsDiv = document.getElementById('foundKeywords');
+            foundKeywordsDiv.innerHTML = '';
+            analysis.technicalKeywords.slice(0, 15).forEach(keyword => {
+                const tag = document.createElement('span');
+                tag.className = 'keyword-tag';
+                tag.textContent = keyword.term;
+                foundKeywordsDiv.appendChild(tag);
+            });
+            
+            document.getElementById('technicalText').innerHTML = 
+                `Found <strong>${analysis.technicalKeywords.length}</strong> technical keywords. ${analysis.technicalKeywords.length < 10 ? 'Include more relevant technical skills.' : 'Strong technical keyword presence!'}`;
+
+            // Recommendations
+            const recommendations = analyzer.generateRecommendations(analysis);
+            const recommendationsDiv = document.getElementById('recommendations');
+            recommendationsDiv.innerHTML = '';
+            
+            recommendations.forEach(rec => {
+                const item = document.createElement('div');
+                item.className = 'recommendation-item';
+                item.innerHTML = `
+                    <div class="recommendation-icon">${rec.icon}</div>
+                    <div>${rec.text}</div>
+                `;
+                recommendationsDiv.appendChild(item);
+            });
+            
+            if (recommendations.length === 0) {
+                recommendationsDiv.innerHTML = '<div class="recommendation-item"><div class="recommendation-icon">🎉</div><div>Excellent! Your resume follows best practices.</div></div>';
+            }
+        }
+
+        function resetUploadState() {
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.querySelector('.upload-area').style.display = 'block';
+            document.getElementById('resumeDisplay').style.display = 'none';
+            document.getElementById('insightsPanel').style.display = 'none';
+        }
+
+        // Demo functionality - load sample resume
+        function loadSampleResume() {
+            const sampleText = `John Smith
+Software Engineer | Full Stack Developer
+
+Contact Information:
+Email: john.smith@email.com
+Phone: (555) 123-4567
+LinkedIn: linkedin.com/in/johnsmith
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | Tech Solutions Inc. | 2020 - Present
+• Developed and maintained 15+ web applications using React.js, Node.js, and MongoDB
+• Implemented automated testing framework that reduced deployment time by 40%
+• Led a team of 5 developers in delivering critical features ahead of schedule
+• Optimized database queries resulting in 60% improvement in application performance
+• Collaborated with product managers to define technical requirements for new features
+
+Software Developer | StartupCorp | 2018 - 2020
+• Built responsive web applications using JavaScript, HTML5, and CSS3
+• Integrated third-party APIs and payment gateways for e-commerce platform
+• Participated in code reviews and mentored junior developers
+• Worked on agile development team following scrum methodology
+• Helped with debugging and troubleshooting production issues
+
+TECHNICAL SKILLS
+Programming Languages: JavaScript, Python, Java, TypeScript
+Frontend: React.js, Angular, Vue.js, HTML5, CSS3, SASS
+Backend: Node.js, Express.js, Django, Spring Boot
+Databases: MongoDB, PostgreSQL, MySQL, Redis
+Cloud: AWS, Docker, Kubernetes, Jenkins
+Tools: Git, Jenkins, JIRA, Confluence
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology | 2014 - 2018
+GPA: 3.8/4.0
+
+PROJECTS
+E-Commerce Platform | 2021
+Developed a full-stack e-commerce solution serving 10,000+ users
+Technologies: React, Node.js, MongoDB, AWS
+Features: Real-time inventory, payment integration, admin dashboard
+
+ACHIEVEMENTS
+• Increased team productivity by 35% through process improvements
+• Reduced application load time by 50% through code optimization
+• Successfully delivered 12 major features with zero critical bugs
+• Mentored 8 junior developers leading to 3 internal promotions`;
+
+            processResumeText(sampleText);
+        }
+
+        // Initialize with sample data for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a demo button for showcasing
+            const uploadSection = document.querySelector('.upload-section');
+            const demoButton = document.createElement('button');
+            demoButton.className = 'btn';
+            demoButton.textContent = 'Try Sample Resume';
+            demoButton.style.marginTop = '20px';
+            demoButton.onclick = loadSampleResume;
+            uploadSection.appendChild(demoButton);
+        });
+
+        // Add drag and drop functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.querySelector('.upload-area');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                uploadArea.style.background = 'linear-gradient(135deg, #fff3cd, #fff8db)';
+                uploadArea.style.borderColor = '#FF9900';
+            }
+
+            function unhighlight(e) {
+                uploadArea.style.background = '';
+                uploadArea.style.borderColor = '#e0e0e0';
+            }
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    document.getElementById('fileInput').files = files;
+                    handleFileUpload({ target: { files: files } });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
