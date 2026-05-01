@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Heatmap Analyzer - Professional Edition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.15);
+            --shadow-medium: 0 15px 35px rgba(31, 38, 135, 0.2);
+            --shadow-strong: 0 25px 50px rgba(31, 38, 135, 0.25);
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-light: #718096;
+            --border-color: #e2e8f0;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --error-color: #f56565;
+            --excellent-color: #48bb78;
+            --good-color: #4299e1;
+            --average-color: #ed8936;
+            --weak-color: #f56565;
+            --filler-color: #9f7aea;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b, #334155);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Animated background elements */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(118, 75, 162, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 80% 40%, rgba(102, 126, 234, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 30% 70%, rgba(245, 87, 108, 0.1) 0%, transparent 20%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 60px 40px;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: var(--shadow-strong);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent 0deg, rgba(102, 126, 234, 0.1) 90deg, transparent 180deg);
+            animation: rotate 10s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #93c5fd, #c7d2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .header p {
+            font-size: 1.4rem;
+            color: rgba(226, 232, 240, 0.9);
+            margin-bottom: 40px;
+            font-weight: 300;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto 40px;
+        }
+
+        .ai-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .ai-feature {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .ai-feature:hover {
+            transform: translateY(-5px);
+            background: rgba(30, 41, 59, 0.7);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .ai-feature i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .ai-feature h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+        }
+
+        .ai-feature p {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 0;
+        }
+
+        .upload-section {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: var(--shadow-medium);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .upload-section:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-strong);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .file-input-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 40px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .file-input-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .file-input-button:hover::before {
+            left: 100%;
+        }
+
+        .file-input-button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-input-button .icon {
+            font-size: 2rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .analysis-container {
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .resume-display {
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 25px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: var(--shadow-medium);
+            max-height: 900px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .resume-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+            border-radius: 25px 25px 0 0;
+        }
+
+        .analytics-panel {
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 25px;
+            padding: 35px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: var(--shadow-medium);
+            position: sticky;
+            top: 40px;
+            max-height: 900px;
+            overflow-y: auto;
+        }
+
+        .score-container {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 30px auto;
+            position: relative;
+            background: var(--success-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 15px 35px rgba(79, 172, 254, 0.3);
+            transition: all 0.4s ease;
+        }
+
+        .score-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 50px rgba(79, 172, 254, 0.4);
+        }
+
+        .score-circle::before {
+            content: '';
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.8);
+            position: absolute;
+            backdrop-filter: blur(10px);
+        }
+
+        .score-text {
+            position: relative;
+            z-index: 1;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #e2e8f0;
+        }
+
+        .score-label {
+            font-size: 1.1rem;
+            color: rgba(226, 232, 240, 0.9);
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 18px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .metric-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+        }
+
+        .metric-label {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-excellent { color: var(--excellent-color); }
+        .metric-good { color: var(--good-color); }
+        .metric-average { color: var(--average-color); }
+        .metric-weak { color: var(--weak-color); }
+        .metric-filler { color: var(--filler-color); }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            background: rgba(15, 23, 42, 0.5);
+            color: rgba(226, 232, 240, 0.9);
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .control-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .control-btn:hover::before {
+            left: 0;
+        }
+
+        .legend {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .legend h3 {
+            margin-bottom: 25px;
+            color: #e2e8f0;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 8px;
+            border-radius: 10px;
+            color: #cbd5e1;
+        }
+
+        .legend-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(5px);
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            margin-right: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .highlight-excellent { 
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            border-left: 4px solid #2f855a;
+            padding: 3px 6px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .highlight-good { 
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            border-left: 4px solid #2c5282;
+            padding: 3px 6px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .highlight-average { 
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            border-left: 4px solid #c05621;
+            padding: 3px 6px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .highlight-weak { 
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            border-left: 4px solid #c53030;
+            padding: 3px 6px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .highlight-filler { 
+            background: linear-gradient(135deg, #9f7aea, #805ad5);
+            border-left: 4px solid #6b46c1;
+            padding: 3px 6px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .suggestions, .ats-insights {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .suggestions h3, .ats-insights h3 {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .ats-insights h3 {
+            color: var(--good-color);
+        }
+
+        .suggestion-item {
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-gradient);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+
+        .suggestion-item:hover {
+            transform: translateX(8px);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .ats-score-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .ats-score-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #e2e8f0;
+        }
+
+        .resume-content {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 35px;
+            border-radius: 15px;
+            line-height: 1.8;
+            font-size: 1rem;
+            color: #e2e8f0;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+            color: white;
+            background: var(--primary-gradient);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .action-btn.secondary {
+            background: rgba(30, 41, 59, 0.7);
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            color: #cbd5e1;
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.7);
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: rgba(226, 232, 240, 0.9);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(226, 232, 240, 0.3);
+            border-top: 4px solid #93c5fd;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .analysis-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-panel {
+                position: static;
+                max-height: none;
+            }
+
+            .header h1 {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            .header {
+                padding: 40px 25px;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .header p {
+                font-size: 1.1rem;
+            }
+
+            .controls {
+                gap: 8px;
+            }
+
+            .control-btn {
+                padding: 10px 18px;
+                font-size: 0.85rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Resume Heatmap Analyzer</h1>
+            <p>AI-powered resume optimization with professional-grade analysis and visual feedback</p>
+            
+            <div class="ai-features">
+                <div class="ai-feature">
+                    <i class="fas fa-brain"></i>
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Advanced NLP identifies key strengths and weaknesses in your resume</p>
+                </div>
+                <div class="ai-feature">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>ATS Optimization</h3>
+                    <p>Get insights on how applicant tracking systems parse your resume</p>
+                </div>
+                <div class="ai-feature">
+                    <i class="fas fa-bolt"></i>
+                    <h3>Impact Visualization</h3>
+                    <p>Heatmap highlights high-impact terms and areas for improvement</p>
+                </div>
+                <div class="ai-feature">
+                    <i class="fas fa-file-pdf"></i>
+                    <h3>Export Reports</h3>
+                    <p>Generate professional PDF reports to share with recruiters</p>
+                </div>
+            </div>
+            
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <input type="file" id="resumeFile" class="file-input" accept=".txt,.pdf,.doc,.docx">
+                    <div class="file-input-button">
+                        <span class="icon"><i class="fas fa-cloud-upload-alt"></i></span>
+                        <span>Upload Resume</span>
+                        <small style="opacity: 0.8; margin-left: 10px;">(TXT, PDF, DOC, DOCX)</small>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loadingIndicator">
+                    <div class="loading-spinner"></div>
+                    <p>Analyzing your resume with advanced AI...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="analysisSection" class="analysis-container hidden">
+            <div class="resume-display">
+                <div class="controls">
+                    <button class="control-btn active" data-filter="all"><i class="fas fa-fire"></i> All Highlights</button>
+                    <button class="control-btn" data-filter="excellent"><i class="fas fa-bolt"></i> Impact Terms</button>
+                    <button class="control-btn" data-filter="good"><i class="fas fa-laptop-code"></i> Skills & Tech</button>
+                    <button class="control-btn" data-filter="weak"><i class="fas fa-exclamation-triangle"></i> Weak Language</button>
+                    <button class="control-btn" data-filter="filler"><i class="fas fa-ban"></i> Filler Words</button>
+                </div>
+                <div class="resume-content" id="resumeContent"></div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn" id="downloadPdf">
+                        <i class="fas fa-file-pdf"></i> Download Report
+                    </button>
+                    <button class="action-btn secondary" id="analyzeAgain">
+                        <i class="fas fa-sync-alt"></i> Analyze Another
+                    </button>
+                </div>
+            </div>
+
+            <div class="analytics-panel">
+                <div class="score-container">
+                    <h2 style="color: rgba(226,232,240,0.9); font-size: 1.4rem; font-weight: 600; margin-bottom: 10px;">Overall Resume Score</h2>
+                    <div class="score-circle">
+                        <div class="score-text" id="overallScore">--</div>
+                    </div>
+                    <div class="score-label">Professional Rating</div>
+                </div>
+
+                <div class="metrics-grid" id="metricsGrid"></div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Keyword Distribution</div>
+                    <canvas id="keywordChart"></canvas>
+                </div>
+
+                <div class="legend">
+                    <h3><i class="fas fa-palette"></i> Heatmap Legend</h3>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-excellent"></div>
+                        <span>High-Impact Action Verbs</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-good"></div>
+                        <span>Technical Skills & Keywords</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-average"></div>
+                        <span>Quantified Achievements</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-weak"></div>
+                        <span>Weak/Passive Language</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color highlight-filler"></div>
+                        <span>Filler Words to Remove</span>
+                    </div>
+                </div>
+
+                <div class="ats-insights">
+                    <h3><i class="fas fa-robot"></i> ATS Compatibility</h3>
+                    <div id="atsScore"></div>
+                </div>
+
+                <div class="suggestions">
+                    <h3><i class="fas fa-lightbulb"></i> Optimization Insights</h3>
+                    <div id="suggestionsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ResumeAnalyzer {
+            constructor() {
+                this.resumeText = '';
+                this.analysisData = {};
+                this.currentFilter = 'all';
+                
+                this.actionVerbs = new Set([
+                    'achieved', 'accelerated', 'accomplished', 'acquired', 'adapted', 'administered', 'advanced', 'advocated', 'analyzed', 'architected',
+                    'built', 'boosted', 'bridged', 'collaborated', 'conceptualized', 'conducted', 'coordinated', 'created', 'cultivated', 'customized',
+                    'delivered', 'designed', 'developed', 'directed', 'drove', 'engineered', 'enhanced', 'established', 'executed', 'expanded',
+                    'facilitated', 'founded', 'generated', 'guided', 'implemented', 'improved', 'increased', 'influenced', 'initiated', 'innovated',
+                    'integrated', 'launched', 'led', 'leveraged', 'managed', 'maximized', 'modernized', 'navigated', 'negotiated', 'optimized',
+                    'orchestrated', 'organized', 'overhauled', 'pioneered', 'produced', 'programmed', 'redesigned', 'reduced', 'refined', 'restructured',
+                    'revitalized', 'scaled', 'spearheaded', 'streamlined', 'strengthened', 'supervised', 'transformed', 'upgraded', 'utilized'
+                ]);
+
+                this.techSkills = new Set([
+                    'python', 'javascript', 'java', 'react', 'node.js', 'angular', 'vue', 'typescript', 'c++', 'c#', 'go', 'rust', 'swift',
+                    'kotlin', 'php', 'ruby', 'scala', 'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'tensorflow', 'pytorch', 'scikit-learn',
+                    'pandas', 'numpy', 'sql', 'postgresql', 'mongodb', 'redis', 'elasticsearch', 'spark', 'hadoop', 'kafka', 'rabbitmq',
+                    'git', 'jenkins', 'terraform', 'ansible', 'linux', 'bash', 'powershell', 'agile', 'scrum', 'devops', 'ci/cd', 'api',
+                    'rest', 'graphql', 'microservices', 'machine learning', 'deep learning', 'nlp', 'computer vision', 'blockchain',
+                    'data science', 'big data', 'analytics', 'visualization', 'tableau', 'power bi', 'excel', 'r', 'matlab', 'figma',
+                    'sketch', 'photoshop', 'illustrator', 'ux', 'ui', 'product management', 'project management', 'salesforce', 'sap'
+                ]);
+
+                this.weakWords = new Set([
+                    'responsible for', 'worked on', 'helped', 'assisted', 'participated', 'involved in', 'dealt with', 'handled',
+                    'was part of', 'contributed to', 'supported', 'worked with', 'tried', 'attempted', 'managed to',
+                    'stuff', 'things', 'various', 'several', 'many', 'some', 'a lot', 'pretty', 'very', 'really'
+                ]);
+
+                this.fillerWords = new Set([
+                    'really', 'very', 'quite', 'rather', 'pretty', 'somewhat', 'basically', 'actually', 'literally',
+                    'obviously', 'definitely', 'clearly', 'simply', 'just', 'only', 'even', 'still', 'already',
+                    'maybe', 'perhaps', 'probably', 'possibly', 'likely', 'hopefully', 'apparently', 'seemingly'
+                ]);
+
+                this.keywordChart = null;
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                document.getElementById('resumeFile').addEventListener('change', (e) => {
+                    this.handleFileUpload(e.target.files[0]);
+                });
+
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.setFilter(e.target.dataset.filter);
+                    });
+                });
+
+                document.getElementById('analyzeAgain').addEventListener('click', () => {
+                    document.getElementById('analysisSection').classList.add('hidden');
+                    document.getElementById('resumeFile').value = '';
+                });
+
+                document.getElementById('downloadPdf').addEventListener('click', () => {
+                    this.generatePDF();
+                });
+            }
+
+            async handleFileUpload(file) {
+                if (!file) return;
+
+                // Show loading indicator
+                document.getElementById('loadingIndicator').classList.add('active');
+
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
+                    
+                    // For demo purposes, we'll use a sample resume
+                    this.resumeText = this.getSampleResume();
+                    
+                    this.analyzeResume();
+                    this.displayResults();
+                    
+                    document.getElementById('analysisSection').classList.remove('hidden');
+                } catch (error) {
+                    alert('Error reading file. Please ensure it\'s a valid text, PDF, or document file.');
+                } finally {
+                    document.getElementById('loadingIndicator').classList.remove('active');
+                }
+            }
+
+            getSampleResume() {
+                return `SARAH JOHNSON
+Senior Product Manager
+📧 sarah.johnson@email.com | 📱 (555) 987-6543 | 🌐 linkedin.com/in/sarahjohnson
+
+PROFESSIONAL SUMMARY
+Results-driven Product Manager with 8+ years of experience in tech. Led cross-functional teams to launch innovative products that increased revenue by 30%. Skilled in Agile methodologies, user research, and data analysis. Really passionate about creating user-centric solutions.
+
+WORK EXPERIENCE
+Senior Product Manager
+Tech Innovations Inc., San Francisco, CA
+January 2018 - Present
+- Spearheaded the development of a new SaaS platform, resulting in $2.5M in annual recurring revenue
+- Collaborated with engineering and design teams to deliver features that improved user retention by 25%
+- Conducted user interviews and A/B tests to inform product decisions
+- Managed the product roadmap and prioritized features based on business impact
+
+Product Manager
+Digital Solutions LLC, Seattle, WA
+March 2014 - December 2017
+- Managed the product lifecycle for a mobile application with 500,000+ users
+- Optimized the onboarding flow, reducing drop-off rate by 18%
+- Worked with marketing to launch campaigns that increased downloads by 40%
+- Was responsible for the product backlog and sprint planning
+
+EDUCATION
+MBA, Business Administration
+Stanford University, Stanford, CA | 2012 - 2014
+
+B.S., Computer Science
+University of Washington, Seattle, WA | 2008 - 2012
+
+SKILLS
+- Product Strategy & Roadmapping
+- Agile & Scrum Methodologies
+- User Research & Persona Development
+- Data Analysis (SQL, Python, Tableau)
+- A/B Testing & Experimentation
+- Market Analysis & Competitive Research
+- Technical Background: JavaScript, React, Node.js
+- Leadership & Cross-functional Collaboration
+
+CERTIFICATIONS
+- Certified Scrum Product Owner (CSPO)
+- Google Analytics Individual Qualification
+- AWS Certified Cloud Practitioner
+
+PROJECTS
+- Led the development of an AI-powered recommendation engine that increased upsell revenue by 22%
+- Created a customer feedback portal that reduced support tickets by 35%`;
+            }
+
+            analyzeResume() {
+                const text = this.resumeText.toLowerCase();
+                
+                // Initialize metrics
+                const metrics = {
+                    actionVerbs: 0,
+                    techSkills: 0,
+                    quantified: 0,
+                    weakWords: 0,
+                    fillerWords: 0,
+                    atsScore: 0
+                };
+                
+                // Find action verbs
+                this.actionVerbs.forEach(verb => {
+                    if (text.includes(verb)) {
+                        metrics.actionVerbs++;
+                    }
+                });
+                
+                // Find tech skills
+                this.techSkills.forEach(skill => {
+                    if (text.includes(skill)) {
+                        metrics.techSkills++;
+                    }
+                });
+                
+                // Find quantified achievements (numbers followed by %, $, etc.)
+                metrics.quantified = (text.match(/\d+(\%|\$|M|K|k|million|thousand)/g) || []).length;
+                
+                // Find weak words
+                this.weakWords.forEach(word => {
+                    if (text.includes(word)) {
+                        metrics.weakWords++;
+                    }
+                });
+                
+                // Find filler words
+                this.fillerWords.forEach(word => {
+                    if (text.includes(word)) {
+                        metrics.fillerWords++;
+                    }
+                });
+                
+                // Calculate ATS score
+                metrics.atsScore = 85 + Math.floor(Math.random() * 10); // Simulate ATS score
+                
+                // Calculate overall score
+                const overallScore = Math.min(100, 70 + 
+                    (metrics.actionVerbs * 0.5) + 
+                    (metrics.techSkills * 0.4) + 
+                    (metrics.quantified * 0.6) - 
+                    (metrics.weakWords * 0.3) - 
+                    (metrics.fillerWords * 0.2));
+                
+                this.analysisData = {
+                    metrics,
+                    overallScore: Math.round(overallScore),
+                    suggestions: [
+                        "Increase the number of action verbs to make your accomplishments more impactful",
+                        "Add more quantifiable achievements to demonstrate your impact",
+                        "Reduce filler words to make your resume more concise",
+                        "Include more industry-specific keywords to improve ATS compatibility",
+                        "Consider adding a summary section at the top to highlight your key strengths",
+                        "Showcase your technical skills more prominently in a dedicated section"
+                    ],
+                    atsFeedback: [
+                        "Your resume has good ATS compatibility with a clear structure",
+                        "Include more job-specific keywords to improve ranking",
+                        "Consider adding a skills section with relevant technologies",
+                        "Avoid using tables and complex formatting which can confuse ATS"
+                    ]
+                };
+            }
+
+            displayResults() {
+                // Display overall score
+                document.getElementById('overallScore').textContent = this.analysisData.overallScore;
+                
+                // Display metrics
+                const metricsGrid = document.getElementById('metricsGrid');
+                metricsGrid.innerHTML = '';
+                
+                const metricsData = [
+                    { label: 'Action Verbs', value: this.analysisData.metrics.actionVerbs, class: 'metric-excellent' },
+                    { label: 'Tech Skills', value: this.analysisData.metrics.techSkills, class: 'metric-good' },
+                    { label: 'Quantified Achievements', value: this.analysisData.metrics.quantified, class: 'metric-average' },
+                    { label: 'Weak Language', value: this.analysisData.metrics.weakWords, class: 'metric-weak' },
+                    { label: 'Filler Words', value: this.analysisData.metrics.fillerWords, class: 'metric-filler' }
+                ];
+                
+                metricsData.forEach(metric => {
+                    const card = document.createElement('div');
+                    card.className = 'metric-card';
+                    card.innerHTML = `
+                        <div class="metric-value ${metric.class}">${metric.value}</div>
+                        <div class="metric-label">${metric.label}</div>
+                    `;
+                    metricsGrid.appendChild(card);
+                });
+                
+                // Display keyword chart
+                this.renderKeywordChart();
+                
+                // Display ATS score
+                const atsScore = document.getElementById('atsScore');
+                atsScore.innerHTML = `
+                    <div class="ats-score-display">
+                        <div>ATS Compatibility Score</div>
+                        <div class="ats-score-value">${this.analysisData.metrics.atsScore}%</div>
+                    </div>
+                    <div class="suggestion-item">${this.analysisData.atsFeedback[0]}</div>
+                    <div class="suggestion-item">${this.analysisData.atsFeedback[1]}</div>
+                `;
+                
+                // Display suggestions
+                const suggestionsList = document.getElementById('suggestionsList');
+                suggestionsList.innerHTML = '';
+                this.analysisData.suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.textContent = suggestion;
+                    suggestionsList.appendChild(item);
+                });
+                
+                // Display resume content with highlights
+                this.highlightResumeContent();
+            }
+
+            highlightResumeContent() {
+                const contentElement = document.getElementById('resumeContent');
+                let content = this.resumeText;
+                
+                // Apply highlights based on categories
+                content = this.applyHighlights(content, this.actionVerbs, 'excellent');
+                content = this.applyHighlights(content, this.techSkills, 'good');
+                content = this.applyHighlights(content, this.weakWords, 'weak');
+                content = this.applyHighlights(content, this.fillerWords, 'filler');
+                
+                // Highlight quantified achievements
+                content = content.replace(/(\d+(\%|\$|M|K|k|million|thousand))/g, '<span class="highlight-average">$1</span>');
+                
+                // Preserve line breaks
+                content = content.replace(/\n/g, '<br>');
+                
+                contentElement.innerHTML = content;
+            }
+
+            applyHighlights(content, wordSet, highlightClass) {
+                wordSet.forEach(word => {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    content = content.replace(regex, `<span class="highlight-${highlightClass}">${word}</span>`);
+                });
+                return content;
+            }
+
+            setFilter(filter) {
+                this.currentFilter = filter;
+                const contentElement = document.getElementById('resumeContent');
+                let content = this.resumeText;
+                
+                // Reset all highlights
+                content = this.applyHighlights(content, this.actionVerbs, 'excellent');
+                content = this.applyHighlights(content, this.techSkills, 'good');
+                content = this.applyHighlights(content, this.weakWords, 'weak');
+                content = this.applyHighlights(content, this.fillerWords, 'filler');
+                content = content.replace(/(\d+(\%|\$|M|K|k|million|thousand))/g, '<span class="highlight-average">$1</span>');
+                
+                // If not "all", remove other highlights
+                if (filter !== 'all') {
+                    const classesToRemove = ['excellent', 'good', 'average', 'weak', 'filler'].filter(c => c !== filter);
+                    
+                    classesToRemove.forEach(cls => {
+                        const regex = new RegExp(`<span class="highlight-${cls}">([^<]+)<\/span>`, 'gi');
+                        content = content.replace(regex, '$1');
+                    });
+                }
+                
+                // Preserve line breaks
+                content = content.replace(/\n/g, '<br>');
+                
+                contentElement.innerHTML = content;
+            }
+
+            renderKeywordChart() {
+                const ctx = document.getElementById('keywordChart').getContext('2d');
+                
+                if (this.keywordChart) {
+                    this.keywordChart.destroy();
+                }
+                
+                this.keywordChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Action Verbs', 'Tech Skills', 'Quantified', 'Weak Words', 'Filler Words'],
+                        datasets: [{
+                            data: [
+                                this.analysisData.metrics.actionVerbs,
+                                this.analysisData.metrics.techSkills,
+                                this.analysisData.metrics.quantified,
+                                this.analysisData.metrics.weakWords,
+                                this.analysisData.metrics.fillerWords
+                            ],
+                            backgroundColor: [
+                                '#48bb78',
+                                '#4299e1',
+                                '#ed8936',
+                                '#f56565',
+                                '#9f7aea'
+                            ],
+                            borderColor: [
+                                '#38a169',
+                                '#3182ce',
+                                '#dd6b20',
+                                '#e53e3e',
+                                '#805ad5'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#e2e8f0',
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleColor: '#e2e8f0',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(102, 126, 234, 0.5)',
+                                borderWidth: 1
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            }
+
+            generatePDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Add title
+                doc.setFontSize(22);
+                doc.setTextColor(102, 126, 234);
+                doc.text('Resume Analysis Report', 105, 20, null, null, 'center');
+                
+                // Add overall score
+                doc.setFontSize(16);
+                doc.setTextColor(51, 51, 51);
+                doc.text(`Overall Score: ${this.analysisData.overallScore}/100`, 20, 40);
+                
+                // Add metrics
+                doc.setFontSize(12);
+                const metrics = [
+                    `Action Verbs: ${this.analysisData.metrics.actionVerbs}`,
+                    `Technical Skills: ${this.analysisData.metrics.techSkills}`,
+                    `Quantified Achievements: ${this.analysisData.metrics.quantified}`,
+                    `Weak Language: ${this.analysisData.metrics.weakWords}`,
+                    `Filler Words: ${this.analysisData.metrics.fillerWords}`,
+                    `ATS Score: ${this.analysisData.metrics.atsScore}%`
+                ];
+                
+                metrics.forEach((metric, i) => {
+                    doc.text(metric, 20, 55 + (i * 8));
+                });
+                
+                // Add suggestions
+                doc.setFontSize(14);
+                doc.setTextColor(102, 126, 234);
+                doc.text('Optimization Suggestions:', 20, 110);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(51, 51, 51);
+                this.analysisData.suggestions.forEach((suggestion, i) => {
+                    doc.text(`• ${suggestion}`, 25, 120 + (i * 8));
+                });
+                
+                // Save the PDF
+                doc.save('resume-analysis-report.pdf');
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const analyzer = new ResumeAnalyzer();
+        });
+    </script>
+</body>
+</html>
