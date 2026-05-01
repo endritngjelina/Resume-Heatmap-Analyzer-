@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Heatmap Analyzer - Professional Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+            padding: 40px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 40px;
+            padding: 40px;
+        }
+
+        .upload-section {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 30px;
+            border: 2px dashed #e2e8f0;
+            transition: all 0.3s ease;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-section:hover {
+            border-color: #4ECDC4;
+            background: #f0fdfa;
+            transform: translateY(-2px);
+        }
+
+        .upload-section.drag-over {
+            border-color: #FF6B6B;
+            background: #fef2f2;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .resume-text {
+            width: 100%;
+            min-height: 400px;
+            border: none;
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background: white;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+            resize: vertical;
+            margin-top: 20px;
+        }
+
+        .resume-text:focus {
+            outline: none;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(78, 205, 196, 0.2);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .analysis-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .panel-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 16px;
+            position: relative;
+        }
+
+        .score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a202c;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .metric-value {
+            font-weight: 700;
+            color: #1a202c;
+        }
+
+        .suggestions-list {
+            list-style: none;
+        }
+
+        .suggestion-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid #4ECDC4;
+            background: #f0fdfa;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .suggestion-item.warning {
+            border-left-color: #FFA726;
+            background: #fff3e0;
+        }
+
+        .suggestion-item.error {
+            border-left-color: #FF6B6B;
+            background: #fef2f2;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .action-verbs { background-color: rgba(34, 197, 94, 0.3) !important; }
+        .keywords { background-color: rgba(59, 130, 246, 0.3) !important; }
+        .skills { background-color: rgba(168, 85, 247, 0.3) !important; }
+        .achievements { background-color: rgba(245, 158, 11, 0.3) !important; }
+        .filler-words { background-color: rgba(239, 68, 68, 0.3) !important; }
+        .weak-language { background-color: rgba(156, 163, 175, 0.3) !important; }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(78, 205, 196, 0.4);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .keyword-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .keyword-tag {
+            padding: 6px 12px;
+            background: #e0f2fe;
+            color: #0277bd;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            
+            .sidebar {
+                order: -1;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #4ECDC4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .export-section {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .export-btn {
+            flex: 1;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            border-color: #4ECDC4;
+            background: #f0fdfa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Resume Heatmap Analyzer</h1>
+            <p>Advanced AI-powered resume optimization with intelligent content analysis</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📄</div>
+                <h3>Upload or Paste Your Resume</h3>
+                <p>Drag & drop a file or paste your resume text below</p>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" style="display: none;">
+                <textarea id="resumeText" class="resume-text" placeholder="Paste your resume text here...
+
+Example:
+John Smith
+Software Engineer
+
+EXPERIENCE
+• Developed scalable web applications using React and Node.js
+• Collaborated with cross-functional teams to deliver high-quality products
+• Implemented automated testing frameworks that reduced bugs by 40%
+
+SKILLS
+JavaScript, Python, React, Node.js, SQL, Git"></textarea>
+                <button class="analyze-btn" id="analyzeBtn">🔍 Analyze Resume</button>
+                
+                <div class="heatmap-legend">
+                    <div class="legend-item">
+                        <div class="legend-color action-verbs"></div>
+                        <span>Action Verbs</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color keywords"></div>
+                        <span>Keywords</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color skills"></div>
+                        <span>Skills</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color achievements"></div>
+                        <span>Achievements</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color filler-words"></div>
+                        <span>Filler Words</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="analysis-panel">
+                    <div class="panel-title">📊 Resume Score</div>
+                    <div class="score-display">
+                        <div class="score-circle">
+                            <svg width="120" height="120" style="transform: rotate(-90deg);">
+                                <circle cx="60" cy="60" r="50" stroke="#e2e8f0" stroke-width="8" fill="none"></circle>
+                                <circle id="scoreCircle" cx="60" cy="60" r="50" stroke="url(#gradient)" stroke-width="8" fill="none" 
+                                        stroke-dasharray="314" stroke-dashoffset="314" style="transition: stroke-dashoffset 1s ease;">
+                                    <defs>
+                                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#FF6B6B"/>
+                                            <stop offset="100%" style="stop-color:#4ECDC4"/>
+                                        </linearGradient>
+                                    </defs>
+                                </circle>
+                            </svg>
+                        </div>
+                        <div class="score-value" id="scoreValue">--</div>
+                        <div style="font-size: 0.9rem; color: #64748b;">Overall Score</div>
+                    </div>
+                    
+                    <div id="metricsContainer">
+                        <div class="metric-item">
+                            <span class="metric-label">Action Verbs</span>
+                            <span class="metric-value" id="actionVerbsCount">--</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Keywords Density</span>
+                            <span class="metric-value" id="keywordDensity">--%</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Skills Mentioned</span>
+                            <span class="metric-value" id="skillsCount">--</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Quantified Results</span>
+                            <span class="metric-value" id="quantifiedCount">--</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Filler Words</span>
+                            <span class="metric-value" id="fillerWordsCount">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-panel">
+                    <div class="panel-title">🎯 Key Improvements</div>
+                    <ul class="suggestions-list" id="suggestionsList">
+                        <li class="suggestion-item">Upload a resume to see personalized suggestions</li>
+                    </ul>
+                </div>
+
+                <div class="analysis-panel">
+                    <div class="panel-title">🔍 Detected Skills</div>
+                    <div class="keyword-cloud" id="skillsCloud">
+                        <span style="color: #64748b; font-style: italic;">No skills detected yet</span>
+                    </div>
+                </div>
+
+                <div class="analysis-panel">
+                    <div class="panel-title">📈 Section Strength</div>
+                    <div id="sectionStrengths">
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 0.9rem; font-weight: 600;">Experience</span>
+                                <span style="font-size: 0.9rem;" id="expScore">--%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="expProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 0.9rem; font-weight: 600;">Skills</span>
+                                <span style="font-size: 0.9rem;" id="skillsScore">--%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="skillsProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 0.9rem; font-weight: 600;">Education</span>
+                                <span style="font-size: 0.9rem;" id="eduScore">--%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="eduProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-panel">
+                    <div class="panel-title">💾 Export Analysis</div>
+                    <div class="export-section">
+                        <button class="export-btn" id="exportPDF">📄 PDF Report</button>
+                        <button class="export-btn" id="exportJSON">📊 JSON Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing your resume...</p>
+        </div>
+    </div>
+
+    <script>
+        class ResumeAnalyzer {
+            constructor() {
+                this.actionVerbs = [
+                    'achieved', 'analyzed', 'built', 'collaborated', 'created', 'developed', 'designed',
+                    'enhanced', 'established', 'executed', 'generated', 'implemented', 'improved',
+                    'increased', 'launched', 'led', 'managed', 'optimized', 'orchestrated', 'produced',
+                    'reduced', 'resolved', 'streamlined', 'transformed', 'utilized', 'spearheaded',
+                    'pioneered', 'facilitated', 'delivered', 'coordinated', 'supervised', 'mentored'
+                ];
+
+                this.techSkills = [
+                    'javascript', 'python', 'java', 'react', 'angular', 'vue', 'node.js', 'express',
+                    'mongodb', 'postgresql', 'mysql', 'sql', 'html', 'css', 'sass', 'typescript',
+                    'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'git', 'jenkins', 'agile',
+                    'scrum', 'machine learning', 'ai', 'tensorflow', 'pytorch', 'data analysis',
+                    'photoshop', 'illustrator', 'figma', 'sketch', 'adobe creative suite',
+                    'ui/ux', 'rest api', 'graphql', 'microservices', 'devops', 'linux', 'bash'
+                ];
+
+                this.fillerWords = [
+                    'very', 'really', 'quite', 'somewhat', 'rather', 'pretty', 'totally',
+                    'basically', 'literally', 'actually', 'honestly', 'obviously', 'clearly',
+                    'simply', 'just', 'only', 'maybe', 'perhaps', 'probably', 'stuff', 'things'
+                ];
+
+                this.weakLanguage = [
+                    'helped', 'assisted', 'tried', 'attempted', 'worked on', 'participated',
+                    'involved in', 'contributed to', 'responsible for', 'tasked with'
+                ];
+
+                this.initializeEventListeners();
+                this.analysisResults = {};
+            }
+
+            initializeEventListeners() {
+                const uploadSection = document.getElementById('uploadSection');
+                const fileInput = document.getElementById('fileInput');
+                const resumeText = document.getElementById('resumeText');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+
+                uploadSection.addEventListener('click', () => fileInput.click());
+                uploadSection.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadSection.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                uploadSection.addEventListener('drop', this.handleDrop.bind(this));
+
+                fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+                analyzeBtn.addEventListener('click', this.analyzeResume.bind(this));
+                resumeText.addEventListener('input', this.clearHighlights.bind(this));
+
+                document.getElementById('exportPDF').addEventListener('click', this.exportToPDF.bind(this));
+                document.getElementById('exportJSON').addEventListener('click', this.exportToJSON.bind(this));
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('drag-over');
+            }
+
+            handleDragLeave(e) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                if (e.target.files.length > 0) {
+                    this.processFile(e.target.files[0]);
+                }
+            }
+
+            async processFile(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    document.getElementById('resumeText').value = text;
+                };
+                reader.readAsText(file);
+            }
+
+            clearHighlights() {
+                const textarea = document.getElementById('resumeText');
+                textarea.style.background = 'white';
+            }
+
+            async analyzeResume() {
+                const resumeText = document.getElementById('resumeText').value.trim();
+                if (!resumeText) {
+                    alert('Please upload or paste your resume text first.');
+                    return;
+                }
+
+                this.showLoading(true);
+                
+                // Simulate processing time for better UX
+                setTimeout(() => {
+                    this.performAnalysis(resumeText);
+                    this.showLoading(false);
+                }, 1500);
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
+            }
+
+            performAnalysis(text) {
+                const words = text.toLowerCase().split(/\W+/);
+                const sentences = text.split(/[.!?]+/);
+                
+                // Analyze different aspects
+                const actionVerbsFound = this.findMatches(text, this.actionVerbs);
+                const skillsFound = this.findMatches(text, this.techSkills);
+                const fillerWordsFound = this.findMatches(text, this.fillerWords);
+                const weakLanguageFound = this.findMatches(text, this.weakLanguage);
+                const quantifiedResults = this.findQuantifiedResults(text);
+                const achievements = this.findAchievements(text);
+
+                // Calculate metrics
+                const metrics = {
+                    actionVerbs: actionVerbsFound.length,
+                    keywords: skillsFound.length,
+                    skills: new Set(skillsFound.map(s => s.toLowerCase())).size,
+                    quantified: quantifiedResults.length,
+                    fillerWords: fillerWordsFound.length,
+                    weakLanguage: weakLanguageFound.length,
+                    totalWords: words.length,
+                    achievements: achievements.length
+                };
+
+                // Calculate overall score
+                const score = this.calculateOverallScore(metrics);
+
+                // Store results
+                this.analysisResults = {
+                    score,
+                    metrics,
+                    suggestions: this.generateSuggestions(metrics, text),
+                    skillsFound: [...new Set(skillsFound.map(s => s.toLowerCase()))],
+                    sectionStrengths: this.analyzeSectionStrengths(text)
+                };
+
+                // Update UI
+                this.updateScoreDisplay(score);
+                this.updateMetrics(metrics);
+                this.updateSuggestions(this.analysisResults.suggestions);
+                this.updateSkillsCloud(this.analysisResults.skillsFound);
+                this.updateSectionStrengths(this.analysisResults.sectionStrengths);
+                this.applyHeatmap(text);
+            }
+
+            findMatches(text, dictionary) {
+                const matches = [];
+                const lowerText = text.toLowerCase();
+                dictionary.forEach(word => {
+                    const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                    const found = text.match(regex);
+                    if (found) {
+                        matches.push(...found);
+                    }
+                });
+                return matches;
+            }
+
+            findQuantifiedResults(text) {
+                const patterns = [
+                    /\d+%/g,
+                    /\$[\d,]+/g,
+                    /\d+[kKmM]?\+?\s*(users|customers|clients|projects|sales|revenue)/gi,
+                    /(increased|decreased|improved|reduced|grew|generated).*?\d+/gi,
+                    /\d+\s*(months?|years?|weeks?|days?)/gi
+                ];
+                
+                let matches = [];
+                patterns.forEach(pattern => {
+                    const found = text.match(pattern);
+                    if (found) {
+                        matches.push(...found);
+                    }
+                });
+                return matches;
+            }
+
+            findAchievements(text) {
+                const achievementPatterns = [
+                    /award/gi,
+                    /recognition/gi,
+                    /promoted/gi,
+                    /certification/gi,
+                    /published/gi,
+                    /patent/gi
+                ];
+                
+                let matches = [];
+                achievementPatterns.forEach(pattern => {
+                    const found = text.match(pattern);
+                    if (found) {
+                        matches.push(...found);
+                    }
+                });
+                return matches;
+            }
+
+            calculateOverallScore(metrics) {
+                let score = 0;
+                
+                // Action verbs (max 25 points)
+                score += Math.min((metrics.actionVerbs / 10) * 25, 25);
+                
+                // Skills diversity (max 20 points)
+                score += Math.min((metrics.skills / 15) * 20, 20);
+                
+                // Quantified results (max 25 points)
+                score += Math.min((metrics.quantified / 8) * 25, 25);
+                
+                // Keyword density (max 15 points)
+                const keywordDensity = (metrics.keywords / metrics.totalWords) * 100;
+                score += Math.min((keywordDensity / 5) * 15, 15);
+                
+                // Deduct points for filler words and weak language
+                score -= Math.min(metrics.fillerWords * 2, 10);
+                score -= Math.min(metrics.weakLanguage * 1.5, 5);
+                
+                // Achievement bonus (max 10 points)
+                score += Math.min((metrics.achievements / 3) * 10, 10);
+                
+                return Math.max(0, Math.min(100, Math.round(score)));
+            }
+
+            generateSuggestions(metrics, text) {
+                const suggestions = [];
+                
+                if (metrics.actionVerbs < 8) {
+                    suggestions.push({
+                        type: 'error',
+                        text: 'Add more action verbs to strengthen your impact statements. Use words like "developed," "implemented," or "optimized."'
+                    });
+                }
+                
+                if (metrics.quantified < 5) {
+                    suggestions.push({
+                        type: 'warning',
+                        text: 'Include more quantified results (percentages, dollar amounts, numbers) to demonstrate your impact.'
+                    });
+                }
+                
+                if (metrics.skills < 8) {
+                    suggestions.push({
+                        type: 'error',
+                        text: 'Add more relevant technical skills and tools to match job requirements.'
+                    });
+                }
+                
+                if (metrics.fillerWords > 15) {
+                    suggestions.push({
+                        type: 'warning',
+                        text: `Reduce filler words (found ${metrics.fillerWords}). Use more precise, impactful language.`
+                    });
+                }
+                
+                if (metrics.weakLanguage > 10) {
+                    suggestions.push({
+                        type: 'warning',
+                        text: 'Replace weak language like "helped" or "assisted" with stronger action verbs.'
+                    });
+                }
+                
+                if (!text.toLowerCase().includes('objective') && !text.toLowerCase().includes('summary')) {
+                    suggestions.push({
+                        type: 'info',
+                        text: 'Consider adding a professional summary or objective statement at the top of your resume.'
+                    });
+                }
+                
+                if (suggestions.length === 0) {
+                    suggestions.push({
+                        type: 'info',
+                        text: 'Great job! Your resume shows strong optimization. Consider tailoring it further for specific job applications.'
+                    });
+                }
+                
+                return suggestions;
+            }
+
+            analyzeSectionStrengths(text) {
+                const sections = {
+                    experience: 0,
+                    skills: 0,
+                    education: 0
+                };
+                
+                const lowerText = text.toLowerCase();
+                
+                // Experience section analysis
+                if (lowerText.includes('experience') || lowerText.includes('work history')) {
+                    sections.experience += 20;
+                    const expActionVerbs = this.findMatches(text, this.actionVerbs).length;
+                    sections.experience += Math.min(expActionVerbs * 5, 50);
+                    const expQuantified = this.findQuantifiedResults(text).length;
+                    sections.experience += Math.min(expQuantified * 3, 30);
+                }
+                
+                // Skills section analysis
+                if (lowerText.includes('skills') || lowerText.includes('technical')) {
+                    sections.skills += 20;
+                    const skillsFound = this.findMatches(text, this.techSkills).length;
+                    sections.skills += Math.min(skillsFound * 4, 60);
+                    if (skillsFound > 15) sections.skills += 20;
+                }
+                
+                // Education section analysis
+                if (lowerText.includes('education') || lowerText.includes('university') || lowerText.includes('college')) {
+                    sections.education += 30;
+                    if (lowerText.includes('degree') || lowerText.includes('bachelor') || lowerText.includes('master')) {
+                        sections.education += 20;
+                    }
+                    if (lowerText.includes('gpa') || lowerText.includes('honors') || lowerText.includes('cum laude')) {
+                        sections.education += 25;
+                    }
+                    if (lowerText.includes('certification') || lowerText.includes('certified')) {
+                        sections.education += 25;
+                    }
+                }
+                
+                // Normalize scores to 0-100
+                Object.keys(sections).forEach(key => {
+                    sections[key] = Math.min(100, sections[key]);
+                });
+                
+                return sections;
+            }
+
+            updateScoreDisplay(score) {
+                document.getElementById('scoreValue').textContent = score;
+                const circle = document.getElementById('scoreCircle');
+                const circumference = 314;
+                const offset = circumference - (score / 100) * circumference;
+                circle.style.strokeDashoffset = offset;
+            }
+
+            updateMetrics(metrics) {
+                document.getElementById('actionVerbsCount').textContent = metrics.actionVerbs;
+                document.getElementById('keywordDensity').textContent = 
+                    `${((metrics.keywords / metrics.totalWords) * 100).toFixed(1)}%`;
+                document.getElementById('skillsCount').textContent = metrics.skills;
+                document.getElementById('quantifiedCount').textContent = metrics.quantified;
+                document.getElementById('fillerWordsCount').textContent = metrics.fillerWords;
+            }
+
+            updateSuggestions(suggestions) {
+                const container = document.getElementById('suggestionsList');
+                container.innerHTML = '';
+                
+                suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.className = `suggestion-item ${suggestion.type}`;
+                    li.textContent = suggestion.text;
+                    container.appendChild(li);
+                });
+            }
+
+            updateSkillsCloud(skills) {
+                const container = document.getElementById('skillsCloud');
+                container.innerHTML = '';
+                
+                if (skills.length === 0) {
+                    container.innerHTML = '<span style="color: #64748b; font-style: italic;">No skills detected</span>';
+                    return;
+                }
+                
+                skills.slice(0, 20).forEach(skill => {
+                    const tag = document.createElement('span');
+                    tag.className = 'keyword-tag';
+                    tag.textContent = skill;
+                    container.appendChild(tag);
+                });
+            }
+
+            updateSectionStrengths(strengths) {
+                document.getElementById('expScore').textContent = `${strengths.experience}%`;
+                document.getElementById('expProgress').style.width = `${strengths.experience}%`;
+                
+                document.getElementById('skillsScore').textContent = `${strengths.skills}%`;
+                document.getElementById('skillsProgress').style.width = `${strengths.skills}%`;
+                
+                document.getElementById('eduScore').textContent = `${strengths.education}%`;
+                document.getElementById('eduProgress').style.width = `${strengths.education}%`;
+            }
+
+            applyHeatmap(text) {
+                const textarea = document.getElementById('resumeText');
+                let highlightedText = text;
+                
+                // Apply highlights for different categories
+                const highlights = [
+                    { terms: this.actionVerbs, class: 'action-verbs' },
+                    { terms: this.techSkills, class: 'skills' },
+                    { terms: this.fillerWords, class: 'filler-words' },
+                    { terms: this.weakLanguage, class: 'weak-language' }
+                ];
+                
+                // Create a visual representation using background styling
+                // Note: For a full heatmap, you'd typically need a more complex overlay system
+                const actionVerbsCount = this.findMatches(text, this.actionVerbs).length;
+                const skillsCount = this.findMatches(text, this.techSkills).length;
+                const fillerCount = this.findMatches(text, this.fillerWords).length;
+                
+                // Apply a gradient background based on overall content quality
+                const totalWords = text.split(/\W+/).length;
+                const qualityRatio = (actionVerbsCount + skillsCount) / Math.max(fillerCount + 1, totalWords / 50);
+                
+                if (qualityRatio > 2) {
+                    textarea.style.background = 'linear-gradient(90deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1))';
+                } else if (qualityRatio > 1) {
+                    textarea.style.background = 'linear-gradient(90deg, rgba(245, 158, 11, 0.1), rgba(168, 85, 247, 0.1))';
+                } else {
+                    textarea.style.background = 'linear-gradient(90deg, rgba(239, 68, 68, 0.1), rgba(156, 163, 175, 0.1))';
+                }
+            }
+
+            exportToPDF() {
+                if (!this.analysisResults.score) {
+                    alert('Please analyze a resume first.');
+                    return;
+                }
+                
+                // Create a detailed report
+                const report = this.generateReport();
+                const blob = new Blob([report], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'resume-analysis-report.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            exportToJSON() {
+                if (!this.analysisResults.score) {
+                    alert('Please analyze a resume first.');
+                    return;
+                }
+                
+                const data = JSON.stringify(this.analysisResults, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'resume-analysis-data.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            generateReport() {
+                const results = this.analysisResults;
+                const timestamp = new Date().toLocaleString();
+                
+                return `
+RESUME ANALYSIS REPORT
+Generated: ${timestamp}
+
+OVERALL SCORE: ${results.score}/100
+
+DETAILED METRICS:
+• Action Verbs Used: ${results.metrics.actionVerbs}
+• Technical Skills Identified: ${results.metrics.skills}
+• Quantified Results: ${results.metrics.quantified}
+• Keyword Density: ${((results.metrics.keywords / results.metrics.totalWords) * 100).toFixed(1)}%
+• Filler Words: ${results.metrics.fillerWords}
+• Weak Language Instances: ${results.metrics.weakLanguage}
+• Total Words: ${results.metrics.totalWords}
+
+SECTION STRENGTHS:
+• Experience Section: ${results.sectionStrengths.experience}%
+• Skills Section: ${results.sectionStrengths.skills}%
+• Education Section: ${results.sectionStrengths.education}%
+
+IDENTIFIED SKILLS:
+${results.skillsFound.map(skill => `• ${skill}`).join('\n')}
+
+IMPROVEMENT RECOMMENDATIONS:
+${results.suggestions.map(s => `• ${s.text}`).join('\n')}
+
+OPTIMIZATION TIPS:
+• Use more action verbs to start bullet points
+• Quantify your achievements with numbers, percentages, or dollar amounts
+• Include relevant technical skills and industry keywords
+• Remove filler words and weak language
+• Tailor your resume for each specific job application
+• Keep formatting consistent and professional
+• Use 1-2 pages maximum unless you have 10+ years of experience
+
+This analysis was performed by the Professional Resume Heatmap Analyzer.
+For best results, customize your resume for each job application.
+                `.trim();
+            }
+        }
+
+        // Initialize the analyzer when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ResumeAnalyzer();
+        });
+    </script>
+</body>
+</html>
